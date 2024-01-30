@@ -6,7 +6,6 @@ from random import seed
 from random import randint
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
-#from math import comb
 import scipy
 from random import seed
 from random import randint
