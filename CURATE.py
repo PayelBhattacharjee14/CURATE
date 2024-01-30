@@ -2464,10 +2464,10 @@ else:
 #Write the results in a file
 
 if algo == 'curate':
-    fout=open('./logs/results_privgt_own.txt','a')
     print(algo)
-    print(dataset,algo,eps_total,delta_prime,q,T,np.mean(totaleps_curate),
-          np.std(totaleps_curate),np.mean(totalf1_curate),np.std(totalf1_curate),test_number,file=fout)
+    print("The F1-score is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
+    print("Total Leakage is: ",np.mean(totalf1_curate),np.std(totalf1_curate))
+    print("Average number of CI tests: ",test_number)
 elif algo == 'pc':
     print(algo)
     print("Total Tests : " ,test_number)
@@ -2475,21 +2475,21 @@ elif algo == 'pc':
     print("Leakage : " ,totalleakage)
 
 elif algo == 'privpc':
-    fout=open('./logs/results_privgt_priv.txt','a')
     print(algo)
-    print(dataset,algo,delta_prime,q,T,epsilonpriv,np.mean(totaleps_priv),
-          np.std(totaleps_priv),np.mean(totalf1_priv),np.std(totalf1_priv),test_number,file=fout)
+    print("F1-score is: ",np.mean(totaleps_priv),np.std(totaleps_priv))
+    print("Total Leakage is: ", np.mean(totalf1_priv),np.std(totalf1_priv))
+    print("Average number of CI tests: ",test_number)
  
 
 elif algo== 'svt':
-    foutsvt=open('./logs/results_svt_privgt.txt','a')
     print(algo)
-    print(dataset,algo,delta_prime,q,T,epsilonpriv,np.mean(totaleps_svt),
-          np.std(totaleps_svt),np.mean(totalf1_svt),np.std(totalf1_svt),test_numbersvt,file=foutsvt)
+    print("F1-score is: ",np.mean(totaleps_svt),np.std(totaleps_svt))
+    print("Total Leakage is: ",np.mean(totalf1_svt),np.std(totalf1_svt))
+    print("Average number of CI tests: ",test_numbersvt)
 elif algo == 'em':
-    foutem=open('./logs/results_em_privgt.txt','a')
     print(algo)
-    print(dataset,algo,delta_prime,q,T,epsilonpriv,np.mean(totaleps_em),
-          np.std(totaleps_em),np.mean(totalf1_em),np.std(totalf1_em),test_numberem,file=foutem)
+    print("F1-score is: ",np.mean(totaleps_em),np.std(totaleps_em))
+    print("Total Leakage is: ",np.mean(totalf1_em),np.std(totalf1_em))
+    print("Average number of CI tests: ",test_numberem)
     
         
