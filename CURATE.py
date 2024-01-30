@@ -1,17 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[17]:
-
-
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-#check minimization
-#check delta
-
 #Import all the necessary libraries
 
 import pandas as pd
@@ -32,8 +18,6 @@ import networkx as nx
 from scipy.optimize import fsolve
 from itertools import combinations, permutations
 import logging
-_logger = logging.getLogger(__name__)
-#from gsq.ci_tests import ci_test_bin, ci_test_dis
 from collections import namedtuple
 import warnings
 from numpy import ma
@@ -42,23 +26,20 @@ from scipy.stats._stats import _kendall_dis
 import scipy.special as special
 from scipy.optimize import minimize
 import numpy as np
-#from gsq.ci_tests import ci_test_bin, ci_test_dis
 from scipy.stats import chi2
 
 
 
-# In[37]:
+_logger = logging.getLogger(__name__)
 
 
-#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs', 'child', 'alarm']
-#dataset = input("Enter the dataset name ? \n")
+#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey', 'sachs']
 dataset = 'sachs'
 
 #Select an algorithm from: ['curate', 'pc', 'privpc', 'svt', 'em']
-#algo = input("Enter the algorithm name ? \n")
 algo = 'curate'
 
-#
+# Failure probability in DP
 delta_total = 1e-12
 delta_prime = delta_total
 delta_ad = delta_total
@@ -71,14 +52,10 @@ q = 1.0
 T = 0.05
 n = q*N
 alpha = T
+# Test Threshold Margins beta_1=beta_2=beta
 beta = 0.3
-
-#q = float(input("Subsampling rate : \n"))
-#T = float(input("Threshold : \n"))
-
-
-# In[38]:
-
+#l1 sensitivity
+delta = (0.7253/np.sqrt(n))
 
 if algo in ['curate']:
     epsilonpriv = None
@@ -106,7 +83,7 @@ ground_truth = {
     "sachs": [(0, 1), (1, 0), (1, 3), (1, 7), (2, 8), (3, 1), (3, 7), (3, 8), (3, 10), (4, 7), (4, 10), (5, 6), (5, 9), (6, 5), (6, 9), (7, 1), (7, 3), (7, 10), (8, 2), (8, 3), (8, 7), (9, 5), (9, 6)],
    }
 
-
+#Privacy budgeting for (order=1 to order=d-2)
 def onlinebudgeting(budget, edges, order):
     if dataset in ['cancer', 'earthquake']:
         d = 5
@@ -783,7 +760,7 @@ def onlinebudgeting(budget, edges, order):
         return result.x
 
 delta = (0.7253/np.sqrt(n))
-#For order=0 CI tests
+#Privacy budgeting for order=0
 if algo == 'curate':
     if dataset in ['cancer', 'earthquake']:
         d = 5
@@ -1010,12 +987,6 @@ elif algo in ['privpc','svt','em']:
     print(epsilonpriv)
 else:
     print("Non-private unperturbed PC")
-
-
-
-
-# In[43]:
-
 
 def bn_data(name, feature=None, size=10000):
     data = pd.read_csv(name+".csv")
@@ -1913,8 +1884,6 @@ def EM(q, epsilon, S, D, R):
 
     return index
 
-#change eps to epsilonpriv
-
 def estimate_skeleton_SVT(indep_test_func, data_matrix, alpha, eps=epsilonpriv, delta=delta_prime, **kwargs):
 
     def method_stable(kwargs):
@@ -2000,7 +1969,7 @@ def estimate_skeleton_SVT(indep_test_func, data_matrix, alpha, eps=epsilonpriv, 
  
     return (g, sep_set, eps_em, delta_em, test_count)
 
-
+# CURATE algorithm
 def estimate_skeleton_curate(epstotal, indep_test_func, data_matrix, **kwargs):
 
     def method_stable(kwargs):
@@ -2235,8 +2204,7 @@ def estimate_skeleton_probe_examine(indep_test_func, data_matrix, alpha, eps=eps
     return (g, sep_set, eps_priv, delta_priv, test_count)
 
 
-# In[122]:
-
+#Orientation phase
 
 def estimate_cpdag(skel_graph, sep_set):
     """Estimate a CPDAG from the skeleton graph and separation sets
@@ -2390,9 +2358,7 @@ else:
         taskval = 'dis'
 
 
-# In[124]:
-
-
+# Result generation for 50 trials
 if algo == 'privpc':
     totaleps_priv = []
     totalf1_priv = []
@@ -2499,14 +2465,10 @@ else:
 #Write the results in a file
 
 if algo == 'curate':
-    #fo1=open('./logs/'+'%s_%s_q%f_eps%f.txt'%(dataset,algo,q,eps_total),'w')
     fout=open('./logs/results_privgt_own.txt','a')
     print(algo)
     print(dataset,algo,eps_total,delta_prime,q,T,np.mean(totaleps_curate),
           np.std(totaleps_curate),np.mean(totalf1_curate),np.std(totalf1_curate),test_number,file=fout)
-    #for i in range(0,100):
-    #    print(*test_number,float(totaleps_own[i]),totalf1_own[i])
-    #    print(*test_number,float(totaleps_own[i]),totalf1_own[i],file=fo1)
 elif algo == 'pc':
     print(algo)
     print("Total Tests : " ,test_number)
@@ -2514,33 +2476,21 @@ elif algo == 'pc':
     print("Leakage : " ,totalleakage)
 
 elif algo == 'privpc':
-    #fo1=open('./logs/'+'%s_%s_q%f_eps%f.txt'%(dataset,algo,q,epsilonpriv),'w')
     fout=open('./logs/results_privgt_priv.txt','a')
     print(algo)
     print(dataset,algo,delta_prime,q,T,epsilonpriv,np.mean(totaleps_priv),
           np.std(totaleps_priv),np.mean(totalf1_priv),np.std(totalf1_priv),test_number,file=fout)
-    #for i in range(0,100):
-    #    print(*test_number,float(totaleps_priv[i]),totalf1_priv[i])
-    #    print(*test_number,float(totaleps_priv[i]),totalf1_priv[i],file=fo1)
+ 
 
 elif algo== 'svt':
-    #fo2=open('./logs/'+'svt_%s_%s_q%f_eps%f.txt'%(dataset,algo,q,epsilonpriv),'w')
     foutsvt=open('./logs/results_svt_privgt.txt','a')
     print(algo)
     print(dataset,algo,delta_prime,q,T,epsilonpriv,np.mean(totaleps_svt),
           np.std(totaleps_svt),np.mean(totalf1_svt),np.std(totalf1_svt),test_numbersvt,file=foutsvt)
-    #for i in range(0,10):
-    #    print(*test_numbersvt,float(totaleps_svt[i]),totalf1_svt[i])
-    #    print(*test_numbersvt,float(totaleps_svt[i]),totalf1_svt[i],file=fo2)
 elif algo == 'em':
-    #fo3=open('./logs/'+'em_%s_%s_q%f_eps%f.txt'%(dataset,algo,q,epsilonpriv),'w')
     foutem=open('./logs/results_em_privgt.txt','a')
     print(algo)
     print(dataset,algo,delta_prime,q,T,epsilonpriv,np.mean(totaleps_em),
           np.std(totaleps_em),np.mean(totalf1_em),np.std(totalf1_em),test_numberem,file=foutem)
-    #for i in range(0,10):
-    #    print(*test_numberem,float(totaleps_em[i]),totalf1_em[i])
-    #    print(*test_numberem,float(totaleps_em[i]),totalf1_em[i],file=fo3)
-        
-        
+    
         
