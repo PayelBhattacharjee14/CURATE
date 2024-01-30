@@ -6,6 +6,7 @@ from random import seed
 from random import randint
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
+#from math import comb
 import scipy
 from random import seed
 from random import randint
@@ -26,19 +27,17 @@ import scipy.special as special
 from scipy.optimize import minimize
 import numpy as np
 from scipy.stats import chi2
-
-
-
 _logger = logging.getLogger(__name__)
 
-
-#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey', 'sachs']
-dataset = 'sachs'
+#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs']
+#dataset = input("Enter the dataset name ? \n")
+dataset = 'cancer'
 
 #Select an algorithm from: ['curate', 'pc', 'privpc', 'svt', 'em']
+#algo = input("Enter the algorithm name ? \n")
 algo = 'curate'
 
-# Failure probability in DP
+#
 delta_total = 1e-12
 delta_prime = delta_total
 delta_ad = delta_total
@@ -46,16 +45,17 @@ delta_ad = delta_total
 #N = total number of samples in the dataset 100K
 #q = sub-sampling rate
 #T = test threshold
+# Test threshold margin beta_1=beta_2=beta
+# c1=c2=1
+
 N = 100000
 q = 1.0
 T = 0.05
 n = q*N
 alpha = T
-# Test Threshold Margins beta_1=beta_2=beta
-beta = 0.3
-#l1 sensitivity
-delta = (0.7253/np.sqrt(n))
+beta = 0.1
 
+#Privacy budget input
 if algo in ['curate']:
     epsilonpriv = None
     eps_total = float(input("Total Budget ? \n"))
@@ -72,7 +72,7 @@ if dataset in ['cancer','earthquake','asia']:
     taskval = 'bin'
 else:
     taskval = 'dis'
-
+# Defining the ground truth
 ground_truth = {
     "asia": [(0, 1), (1, 0), (1, 5), (2, 3), (2, 4), (3, 2), (3, 5), (4, 2), (4, 7), (7, 4)],
     "cancer": [(0, 2), (1, 2), (2, 3), (4, 2)],
@@ -80,9 +80,9 @@ ground_truth = {
     "survey": [(2, 3), (2, 4), (4, 2), (4, 5), (5, 3), (5, 4)],
     # "sachs": [(0, 1), (0, 7), (1, 0), (1, 3), (1, 7), (2, 7), (2, 8), (3, 1), (3, 7), (3, 8), (3, 10), (4, 7), (4, 8), (5, 6), (5, 9), (6, 5), (6, 9), (7, 0), (7, 1), (7, 2), (7, 3), (7, 4), (7, 8), (7, 10), (8, 2), (8, 3), (8, 4), (8, 7), (8, 10), (9, 5), (9, 6), (10, 3), (10, 7), (10, 8)],
     "sachs": [(0, 1), (1, 0), (1, 3), (1, 7), (2, 8), (3, 1), (3, 7), (3, 8), (3, 10), (4, 7), (4, 10), (5, 6), (5, 9), (6, 5), (6, 9), (7, 1), (7, 3), (7, 10), (8, 2), (8, 3), (8, 7), (9, 5), (9, 6)],
-   }
+}
 
-#Privacy budgeting for (order=1 to order=d-2)
+# adaptive privacy budget allocation
 def onlinebudgeting(budget, edges, order):
     if dataset in ['cancer', 'earthquake']:
         d = 5
@@ -144,7 +144,7 @@ def onlinebudgeting(budget, edges, order):
             result = opt.minimize(fun, s, method = 'SLSQP',
                                   constraints=cons)
                                         #bounds = bnds, constraints=cons)
-    if dataset in ['survey']:
+    elif dataset in ['survey']:
         d = 5
         if order == 1:
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
@@ -412,7 +412,7 @@ def onlinebudgeting(budget, edges, order):
             b = None
             result = opt.minimize(fun, s, method = 'SLSQP',
                                   constraints=cons)
-    if dataset in ['sachs']:
+    elif dataset in ['sachs']:
         d = 11
         if order == 1:
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
@@ -754,12 +754,15 @@ def onlinebudgeting(budget, edges, order):
             b = None
             result = opt.minimize(fun, s, method = 'SLSQP',
                                   constraints=cons)
-            
+    
+    else:
+        print("Not a valid dataset")
         
-        return result.x
+
+
+    return result.x
 
 delta = (0.7253/np.sqrt(n))
-#Privacy budgeting for order=0
 if algo == 'curate':
     if dataset in ['cancer', 'earthquake']:
         d = 5
@@ -771,7 +774,8 @@ if algo == 'curate':
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))))))
-          
+                        
+        
         d0 = (comb(d,2))
         d1 = comb(d,2)*comb(d-2,1)
         d2 = comb(d,2)*comb(d-2,2)
@@ -788,6 +792,12 @@ if algo == 'curate':
                                                                    +(d1*x[1]*x[1])
                                                                    +(d2*x[2]*x[2])
                                                                    +(d3*x[3]*x[3]))))})
+        a = 0
+        s = 0
+        b = None
+        bnds = ((a,b), (a,b), (a,b), (a,b))
+        results = opt.minimize(fun, (s,s,s,s), method = 'SLSQP',
+                                        bounds = bnds, constraints=cons)
 
     elif dataset in ['survey']:
         d = 6
@@ -822,6 +832,12 @@ if algo == 'curate':
                                                                    +(d2*x[2]*x[2])
                                                                    +(d3*x[3]*x[3])
                                                                    +(d4*x[4]*x[4]))))})
+        a = 0
+        s = 0
+        b = None
+        bnds = ((a,b), (a,b), (a,b), (a,b), (a,b))
+        results = opt.minimize(fun, (s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
     
 
     elif dataset in ['asia']:
@@ -870,6 +886,12 @@ if algo == 'curate':
                                                            +(d4*x[4]*x[4])
                                                            +(d5*x[5]*x[5])
                                                            +(d6*x[6]*x[6]))))})
+        a = 0
+        s = 0
+        b = None
+        bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+        results = opt.minimize(fun, (s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
 
     elif dataset in ['sachs']:
         d = 11
@@ -933,46 +955,6 @@ if algo == 'curate':
                                                            +(d7*x[7]*x[7])
                                                            +(d8*x[8]*x[8])
                                                            +(d9*x[9]*x[9]))))})
-
-
-
-    
-elif algo == 'privpc':
-    print("PrivPC ")
-elif algo == 'svt':
-    print("SVT ")
-elif algo == 'em':
-    print("EM ")
-
-else:
-    print("PC algorithm in function!")
-
-
-
-
-if algo == 'curate':
-    if dataset in ['cancer','earthquake']:
-        a = 0
-        s = 0
-        b = None
-        bnds = ((a,b), (a,b), (a,b), (a,b))
-        results = opt.minimize(fun, (s,s,s,s), method = 'SLSQP',
-                                        bounds = bnds, constraints=cons)
-    elif dataset in ['survey']:
-        a = 0
-        s = 0
-        b = None
-        bnds = ((a,b), (a,b), (a,b), (a,b), (a,b))
-        results = opt.minimize(fun, (s,s,s,s,s), method = 'SLSQP',
-                                         bounds = bnds, constraints=cons)
-    elif dataset in ['asia']:
-        a = 0
-        s = 0
-        b = None
-        bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
-        results = opt.minimize(fun, (s,s,s,s,s,s,s), method = 'SLSQP',
-                                         bounds = bnds, constraints=cons)
-    elif dataset in ['sachs']:
         a = 0
         s = 0
         b = None
@@ -980,12 +962,11 @@ if algo == 'curate':
         results = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
                                          bounds = bnds, constraints=cons)
 
-    print(results.x)
 
-elif algo in ['privpc','svt','em']:
-    print(epsilonpriv)
-else:
-    print("Non-private unperturbed PC")
+
+    else:
+        print("Not a valid dataset")
+        
 
 def bn_data(name, feature=None, size=10000):
     data = pd.read_csv(name+".csv")
@@ -1883,6 +1864,8 @@ def EM(q, epsilon, S, D, R):
 
     return index
 
+#change eps to epsilonpriv
+
 def estimate_skeleton_SVT(indep_test_func, data_matrix, alpha, eps=epsilonpriv, delta=delta_prime, **kwargs):
 
     def method_stable(kwargs):
@@ -1968,7 +1951,7 @@ def estimate_skeleton_SVT(indep_test_func, data_matrix, alpha, eps=epsilonpriv, 
  
     return (g, sep_set, eps_em, delta_em, test_count)
 
-# CURATE algorithm
+
 def estimate_skeleton_curate(epstotal, indep_test_func, data_matrix, **kwargs):
 
     def method_stable(kwargs):
@@ -2203,7 +2186,8 @@ def estimate_skeleton_probe_examine(indep_test_func, data_matrix, alpha, eps=eps
     return (g, sep_set, eps_priv, delta_priv, test_count)
 
 
-#Orientation phase
+# In[122]:
+
 
 def estimate_cpdag(skel_graph, sep_set):
     """Estimate a CPDAG from the skeleton graph and separation sets
@@ -2332,19 +2316,11 @@ def estimate_cpdag(skel_graph, sep_set):
 
     return dag
 
-
-# In[123]:
-
-
-
-# In[44]:
-
-
 if dataset in ['asia', 'cancer', 'earthquake']:
     
         #dm, g_answer = bn_data(dataset, size=100000)
         dm, g_answer = bn_data(dataset, size=N)
-        maxreach = max(min(np.int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
+        maxreach = max(min(int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
         indeptest=bincondKendall
         taskval = 'bin'
         
@@ -2352,12 +2328,11 @@ else:
     
         #dm, g_answer = bn_data(dataset, size=100000)
         dm, g_answer = bn_data(dataset, size=N)
-        maxreach = max(min(np.int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
+        maxreach = max(min(int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
         indeptest=discondKendall
         taskval = 'dis'
 
 
-# Result generation for 50 trials
 if algo == 'privpc':
     totaleps_priv = []
     totalf1_priv = []
@@ -2457,10 +2432,6 @@ else:
         totalleakage = leakage + (np.sqrt(2*(np.log(1/delta_prime))*(leakage)))
         totaleps_curate.append(totalleakage)
         totalf1_curate.append(f1_score)
-        
-
-
-
 #Write the results in a file
 
 if algo == 'curate':
@@ -2479,7 +2450,6 @@ elif algo == 'privpc':
     print("F1-score is: ",np.mean(totaleps_priv),np.std(totaleps_priv))
     print("Total Leakage is: ", np.mean(totalf1_priv),np.std(totalf1_priv))
     print("Average number of CI tests: ",test_number)
- 
 
 elif algo== 'svt':
     print(algo)
@@ -2490,6 +2460,6 @@ elif algo == 'em':
     print(algo)
     print("F1-score is: ",np.mean(totaleps_em),np.std(totaleps_em))
     print("Total Leakage is: ",np.mean(totalf1_em),np.std(totalf1_em))
-    print("Average number of CI tests: ",test_numberem)
-    
-        
+    print("Average number of CI tests: ",test_numberem)      
+
+
