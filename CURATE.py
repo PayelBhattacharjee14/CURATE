@@ -6,7 +6,6 @@ from random import seed
 from random import randint
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
-#from math import comb
 import scipy
 from random import seed
 from random import randint
@@ -34,10 +33,10 @@ _logger = logging.getLogger(__name__)
 dataset = 'cancer'
 
 #Select an algorithm from: ['curate', 'pc', 'privpc', 'svt', 'em']
-#algo = input("Enter the algorithm name ? \n")
+#algo = Enter the CGD algorithm name ["CURATE"="curate","Priv-PC"="privpc","EMPC"="em", "SVTPC"="svt",]
 algo = 'curate'
 
-#
+## Define parameters
 delta_total = 1e-12
 delta_prime = delta_total
 delta_ad = delta_total
