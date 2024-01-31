@@ -2433,10 +2433,12 @@ else:
         totalf1_curate.append(f1_score)
 #Write the results in a file
 
+#Write the results in a file
+
 if algo == 'curate':
     print(algo)
-    print("The F1-score is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
-    print("Total Leakage is: ",np.mean(totalf1_curate),np.std(totalf1_curate))
+    print("Total Leakage is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
+    print("The F1-score is: ",np.mean(totalf1_curate),np.std(totalf1_curate))
     print("Average number of CI tests: ",test_number)
 elif algo == 'pc':
     print(algo)
@@ -2446,19 +2448,19 @@ elif algo == 'pc':
 
 elif algo == 'privpc':
     print(algo)
-    print("F1-score is: ",np.mean(totaleps_priv),np.std(totaleps_priv))
-    print("Total Leakage is: ", np.mean(totalf1_priv),np.std(totalf1_priv))
+    print("Total Leakage is: ",np.mean(totaleps_priv),np.std(totaleps_priv))
+    print("The F1-score is: ", np.mean(totalf1_priv),np.std(totalf1_priv))
     print("Average number of CI tests: ",test_number)
 
 elif algo== 'svt':
     print(algo)
-    print("F1-score is: ",np.mean(totaleps_svt),np.std(totaleps_svt))
-    print("Total Leakage is: ",np.mean(totalf1_svt),np.std(totalf1_svt))
+    print("Total Leakage is: ",np.mean(totaleps_svt),np.std(totaleps_svt))
+    print("The F1-score is: ",np.mean(totalf1_svt),np.std(totalf1_svt))
     print("Average number of CI tests: ",test_numbersvt)
 elif algo == 'em':
     print(algo)
-    print("F1-score is: ",np.mean(totaleps_em),np.std(totaleps_em))
-    print("Total Leakage is: ",np.mean(totalf1_em),np.std(totalf1_em))
+    print("Total Leakage is: ",np.mean(totaleps_em),np.std(totaleps_em))
+    print("The F1-score is: ",np.mean(totalf1_em),np.std(totalf1_em))
     print("Average number of CI tests: ",test_numberem)      
 
 
