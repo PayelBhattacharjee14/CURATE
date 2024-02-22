@@ -97,7 +97,7 @@ def onlinebudgeting(budget, edges, order):
             d3 = edges*comb(d-2,3)
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
                 {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
-                {'type': 'ineq', 'fun': lambda x:  budget - (((d1*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
                                                            +(d2*x[1]*x[1])
                                                            +(d3*x[2]*x[2]))
                                                            +np.sqrt(2*np.log(1/delta_prime)*
@@ -118,7 +118,7 @@ def onlinebudgeting(budget, edges, order):
             d2 = edges*comb(d-2,2)
             d3 = edges*comb(d-2,3)
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
-                {'type': 'ineq', 'fun': lambda x:  budget - (((d2*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d2*x[0]*x[0])
                                                            +(d3*x[1]*x[1]))
                                                            +np.sqrt(2*np.log(1/delta_prime)*
                                                                    ((d2*x[0]*x[0])
@@ -133,7 +133,7 @@ def onlinebudgeting(budget, edges, order):
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x)-1))))/delta))))+
                         (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x)-1))))/delta)))))))
             d3 = edges*comb(d-2,3)
-            cons = ({'type': 'ineq', 'fun': lambda x:  budget - (((d3*x*x))
+            cons = ({'type': 'ineq', 'fun': lambda x:  eps_total - (((d3*x*x))
                                                            +np.sqrt(2*np.log(1/delta_prime)*
                                                                    ((d3*x*x))))})
             a = 0
