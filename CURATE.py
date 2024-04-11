@@ -52,14 +52,14 @@ from scipy.stats import chi2
 
 #Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs', 'child', 'alarm']
 #dataset = input("Enter the dataset name ? \n")
-dataset = 'survey'
+dataset = 'cancer'
 
 #Select an algorithm from: ['curate', 'pc', 'privpc', 'svt', 'em']
 #algo = input("Enter the algorithm name ? \n")
 algo = 'curate'
 
 #
-delta_total = 1e-8
+delta_total = 1e-10
 delta_prime = 1e-12
 delta_ad = 1e-12
 
@@ -71,7 +71,7 @@ q = 1.0
 T = 0.05
 n = q*N
 alpha = T
-beta = 0.2
+beta = 0.5
 
 #q = float(input("Subsampling rate : \n"))
 #T = float(input("Threshold : \n"))
@@ -84,6 +84,7 @@ if algo in ['curate']:
     epsilonpriv = None
     eps_total = float(input("Total Budget ? \n"))
     eps_rem = eps_total
+    eps_limit = eps_total
     print(eps_total)
 elif algo in ['privpc','svt','em']:
     epsilonpriv = float(input("Budget for each CI test ? \n"))
@@ -120,6 +121,7 @@ ground_truth = {
 
 
 def onlinebudgeting(budget, edges, order):
+    #eps_total = budget
     if dataset in ['cancer', 'earthquake']:
         d = 5
         if order == 1:
@@ -134,7 +136,7 @@ def onlinebudgeting(budget, edges, order):
             d3 = edges*comb(d-2,3)
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
                 {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
-                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x:  budget - (((d1*x[0]*x[0])
                                                            +(d2*x[1]*x[1])
                                                            +(d3*x[2]*x[2]))
                                                            +(np.sqrt(2*np.log(1/delta_prime)*(d1*x[0]*x[0])))+
@@ -154,7 +156,7 @@ def onlinebudgeting(budget, edges, order):
             d2 = edges*comb(d-2,2)
             d3 = edges*comb(d-2,3)
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
-                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d2*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x:  budget - (((d2*x[0]*x[0])
                                                            +(d3*x[1]*x[1]))
                                                            +(np.sqrt(2*np.log(1/delta_prime)*(d2*x[0]*x[0])))+
                                                             (np.sqrt(2*np.log(1/delta_prime)*(d3*x[1]*x[1]))))})
@@ -168,7 +170,7 @@ def onlinebudgeting(budget, edges, order):
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x)-1))))/delta))))+
                         (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x)-1))))/delta)))))))
             d3 = edges*comb(d-2,3)
-            cons = ({'type': 'ineq', 'fun': lambda x:  eps_total - (((d3*x*x))
+            cons = ({'type': 'ineq', 'fun': lambda x:  budget - (((d3*x*x))
                                                            +np.sqrt(2*np.log(1/delta_prime)*
                                                                    ((d3*x*x))))})
             a = 0
@@ -197,7 +199,7 @@ def onlinebudgeting(budget, edges, order):
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
                 {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
                 {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
-                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x:  budget - (((d1*x[0]*x[0])
                                                            +(d2*x[1]*x[1])
                                                            +(d3*x[2]*x[2])
                                                            +(d4*x[3]*x[3]))
@@ -225,7 +227,7 @@ def onlinebudgeting(budget, edges, order):
             d4 = edges*comb(d-2,4)
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
                 {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
-                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d2*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x:  budget - (((d2*x[0]*x[0])
                                                            +(d3*x[1]*x[1])
                                                            +(d4*x[2]*x[2]))
                                                            +np.sqrt(2*np.log(1/delta_prime)*(d2*x[0]*x[0])
@@ -247,7 +249,7 @@ def onlinebudgeting(budget, edges, order):
             d3 = edges*comb(d-2,3)
             d4 = edges*comb(d-2,4)
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
-                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d3*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x:  budget - (((d3*x[0]*x[0])
                                                            +(d4*x[1]*x[1]))
                                                            +(np.sqrt(2*np.log(1/delta_prime)*(d3*x[0]*x[0])))
                                                            +(np.sqrt(2*np.log(1/delta_prime)*(d4*x[1]*x[1]))))})
@@ -263,7 +265,7 @@ def onlinebudgeting(budget, edges, order):
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))+
                         (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))))))
             d1 = edges*comb(d-2,4)
-            cons = ({'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0]))
+            cons = ({'type': 'ineq', 'fun': lambda x:  budget - (((d1*x[0]*x[0]))
                                                            +np.sqrt(2*np.log(1/delta_prime)*
                                                                    ((d1*x[0]*x[0]))))})
             a = 0
@@ -274,7 +276,7 @@ def onlinebudgeting(budget, edges, order):
                                         #bounds = bnds, constraints=cons)
 
 
-        return result.x
+    return result.x
 #delta, _ = quad(lambda x: np.exp(-x**2/2) / np.sqrt(2*np.pi), 0, 6 / np.sqrt(n))
 #delta = (1/np.sqrt(2*np.pi))*(2.9/np.sqrt(n))
 delta = (0.7253/np.sqrt(n))
@@ -298,7 +300,7 @@ if algo == 'curate':
         cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
                 {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
                 {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
-                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d0*x[0]*x[0])
+                {'type': 'ineq', 'fun': lambda x: eps_total - (((d0*x[0]*x[0])
                                                            +(d1*x[1]*x[1])
                                                            +(d2*x[2]*x[2])
                                                            +(d3*x[3]*x[3]))
@@ -1386,16 +1388,6 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
     initial = comb(d,2)
     epsiloncurate = []
     while True:
-        if l == 0:
-            epsilon = results.x[0]
-        else:
-            value = onlinebudgeting(eps_rem,edges,l)
-            epsilon = value[0]
-        #print("epsilon: ", epsilon)
-            
-        p = l
-        eps = np.log(1+(q*(np.exp(epsilon)-1)))
-        sigma = delta/eps
         cont = False
         remove_edges = []
         for (i, j) in permutations(node_ids, 2):
@@ -1415,14 +1407,25 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                 for k in combinations(adj_i, l):
                     _logger.debug('indep prob of %s and %s with subset %s'
                                   % (i, j, str(k)))
+                    if l == 0:
+                        epsilon = results.x[0]
+                    else:
+                        value = onlinebudgeting(eps_rem,edges,l)
+                        epsilon = value[0]
+            
+        #p = l
+                    eps = np.log(1+(q*(np.exp(epsilon)-1)))
+                    sigma = delta/eps
+                    #print("order of test: ", l)
+                    #print("epsilon: ", eps)
                     v = np.random.laplace(0, sigma)
-                    #print("*")
-                    #print("value of l: ", l)
                     p_val = indep_test_func(dm_subsampled, i, j, set(k), **kwargs)[1] + v
-                    test_count += 1
                     _logger.debug('p_val is %s' % str(p_val))
                     if p_val < (T+(T*beta)) and p_val > (T-(T*beta)):
                         count = count+1
+                        current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
+                        if current< eps_rem:
+                            continue
                         sd = randint(0,1000)
                         seed(sd)
                         # generate some integers
@@ -1442,6 +1445,9 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                         
                     if p_val > T+(T*beta):
                         count = count+1
+                        current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
+                        if current<eps_rem:
+                            continue
                         if g.has_edge(i, j):
                             _logger.debug('p: remove edge (%s, %s)' % (i, j))
                             if method_stable(kwargs):
@@ -1454,20 +1460,24 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                         break
                 cont = True
         track.append(count)
-        #print("count: ", count)
-        #print("trackl: ", track[l])
         eps_track.append(eps)
-        leak = count*eps_track[l]*eps_track[l]+ np.sqrt(2*count*np.log(1/delta_prime)*eps_track[l]*eps_track[l])
+        #leak = count*eps_track[l]*eps_track[l]+ np.sqrt(2*count*np.log(1/delta_prime)*eps_track[l]*eps_track[l])
+        #leak = count*eps*eps+ np.sqrt(2*count*np.log(1/delta_prime)*eps*eps)
+        #print("Count is : ", count)
+        #print(l)
+        #print("Track variable is: ", track[l])
         #print("leakage at orde i: ", leak)
-        epsiloncurate.append(leak)
-        eps_rem = eps_rem - (count*eps_track[l]*eps_track[l]+
-                            np.sqrt(2*count*np.log(1/delta_prime)*eps_track[l]*eps_track[l]))
+        epsiloncurate.append(((count*eps*eps+
+                            np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))))#current)#leak)
+        eps_rem = eps_rem - (count*eps*eps+
+                            np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
         eps_total = eps_rem
         edges = initial - deledge 
         initial = initial - deledge 
+        delta_curate = delta_curate + delta_prime + (count*delta_ad)
         if delta_curate > delta_total:
             break
-        if eps_rem<=0:
+        if np.sum(epsiloncurate)>=eps_limit:
             break
         l += 1
         if method_stable(kwargs):
@@ -1478,7 +1488,7 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
             break
 
     #return (g, sep_set,track, test, eps_track,p,delta_curate)
-    return (g, sep_set,track, test, eps_track,p,np.sum(epsiloncurate),delta_curate)
+    return (g, sep_set,track, test, eps_track,p,epsiloncurate,delta_curate)
 
 def estimate_skeleton_probe_examine(indep_test_func, data_matrix, alpha, eps=epsilonpriv, delta=delta_prime, bias=0.02, **kwargs):
 
@@ -1820,8 +1830,8 @@ elif algo == 'pc':
 else:
     totaleps_curate = []
     totalf1_curate = []
-    for p in range(0,5):
-        (G, sep_set, num, testcnt, epsval, L,epsiloncurate,deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
+    for p in range(0,1):
+        (G, sep_set, num, testcnt, epsval, L,pb,deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
                                                                     delta_prime = 1e-12,
                                                                     delta_ad = 1e-12,
                                                                     delta_total = 1e-10,
@@ -1834,19 +1844,18 @@ else:
         f1_score = cal_f1(g.edges, g_answer.edges)
         #print("epsiloncurate: ", epsiloncurate)
         #print("CI tests: ", num)
-        totaleps_curate.append(epsiloncurate)
+        totaleps_curate.append(np.sum(pb))
         totalf1_curate.append(f1_score)
+        tests.append(np.sum(num))
+        print("Every Order Leakage by CURATE: ", pb)
 
-
-#Write the results in a file
-
-#Write the results in a file
 
 if algo == 'curate':
     print(algo)
     print("Total Leakage is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
     print("The F1-score is: ",np.mean(totalf1_curate),np.std(totalf1_curate))
-    print("Average number of CI tests: ",test_number)
+    #print("Average number of CI tests: ",int(np.mean(tests)))
+    print("Average number of CI tests: ",num)
 elif algo == 'pc':
     print(algo)
     print("Total Tests : " ,test_number)
@@ -1869,5 +1878,3 @@ elif algo == 'em':
     print("Total Leakage is: ",np.mean(totaleps_em),np.std(totaleps_em))
     print("The F1-score is: ",np.mean(totalf1_em),np.std(totalf1_em))
     print("Average number of CI tests: ",test_numberem)      
-
-
