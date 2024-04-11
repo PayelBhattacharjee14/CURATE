@@ -50,7 +50,7 @@ from scipy.stats import chi2
 # In[37]:
 
 
-#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs', 'child', 'alarm']
+#Select a dataset from: ['cancer', 'earthquake', 'survey']
 #dataset = input("Enter the dataset name ? \n")
 dataset = 'survey'
 
@@ -1415,16 +1415,11 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                 for k in combinations(adj_i, l):
                     _logger.debug('indep prob of %s and %s with subset %s'
                                   % (i, j, str(k)))
-                    #print("order of test: ", l)
-                    #print("epsilon: ", eps)
                     v = np.random.laplace(0, sigma)
                     p_val = indep_test_func(dm_subsampled, i, j, set(k), **kwargs)[1] + v
                     _logger.debug('p_val is %s' % str(p_val))
                     if p_val < (T+(T*beta)) and p_val > (T-(T*beta)):
                         count = count+1
-                        #current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
-                        #if current< eps_rem:
-                        #    continue
                         seed(10000)
                         # generate some integers
                         rand = randint(0,1)
@@ -1443,9 +1438,6 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                         
                     if p_val > T+(T*beta):
                         count = count+1
-                        #current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
-                        #if current<eps_rem:
-                        #    continue
                         if g.has_edge(i, j):
                             _logger.debug('p: remove edge (%s, %s)' % (i, j))
                             if method_stable(kwargs):
@@ -1459,14 +1451,8 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                 cont = True
         track.append(count)
         eps_track.append(eps)
-        #leak = count*eps_track[l]*eps_track[l]+ np.sqrt(2*count*np.log(1/delta_prime)*eps_track[l]*eps_track[l])
-        #leak = count*eps*eps+ np.sqrt(2*count*np.log(1/delta_prime)*eps*eps)
-        #print("Count is : ", count)
-        #print(l)
-        #print("Track variable is: ", track[l])
-        #print("leakage at orde i: ", leak)
         epsiloncurate.append(((count*eps*eps+
-                            np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))))#current)#leak)
+                            np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))))
         eps_rem = eps_rem - (count*eps*eps+
                             np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
         eps_total = eps_rem
@@ -1486,7 +1472,7 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
             break
 
     #return (g, sep_set,track, test, eps_track,p,delta_curate)
-    return (g, sep_set,track, test, eps_track,p,epsiloncurate,delta_curate)
+    return (g, sep_set,track, eps_track,p,epsiloncurate,delta_curate)
 
 def estimate_skeleton_probe_examine(indep_test_func, data_matrix, alpha, eps=epsilonpriv, delta=delta_prime, bias=0.02, **kwargs):
 
@@ -1829,23 +1815,20 @@ else:
     totaleps_curate = []
     totalf1_curate = []
     for p in range(0,1):
-        (G, sep_set, num, testcnt, epsval, L,pb,deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
+        (G, sep_set, num, epsval, L,perorderleakage,deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
                                                                     delta_prime = 1e-12,
                                                                     delta_ad = 1e-12,
                                                                     delta_total = 1e-10,
                                                                      indep_test_func = indeptest,data_matrix = dm,
                                                                      max_reach = maxreach)
-        tests = []
-        test_number = []
-        test_number.append(num.pop())
         g = estimate_cpdag(skel_graph=G, sep_set=sep_set)
         f1_score = cal_f1(g.edges, g_answer.edges)
         #print("epsiloncurate: ", epsiloncurate)
         #print("CI tests: ", num)
-        totaleps_curate.append(np.sum(pb))
+        totaleps_curate.append(np.sum(perorderleakage))
         totalf1_curate.append(f1_score)
         tests.append(np.sum(num))
-        print("Every Order Leakage by CURATE: ", pb)
+        print("Every Order Leakage by CURATE: ", perorderleakage)
 
 
 if algo == 'curate':
@@ -1853,7 +1836,7 @@ if algo == 'curate':
     print("Total Leakage is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
     print("The F1-score is: ",np.mean(totalf1_curate),np.std(totalf1_curate))
     #print("Average number of CI tests: ",int(np.mean(tests)))
-    print("Average number of CI tests: ",num)
+    print("Average number of CI tests: ",int(np.mean(num)))
 elif algo == 'pc':
     print(algo)
     print("Total Tests : " ,test_number)
