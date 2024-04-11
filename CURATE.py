@@ -2069,8 +2069,8 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                     _logger.debug('p_val is %s' % str(p_val))
                     if p_val < (T+(T*beta)) and p_val > (T-(T*beta)):
                         count = count+1
-                        sd = randint(0,1000)
-                        seed(sd)
+                        #sd = randint(0,1000)
+                        seed(1000)
                         # generate some integers
                         rand = randint(0,1)
                         if(rand==0):
