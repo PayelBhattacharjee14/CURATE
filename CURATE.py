@@ -52,7 +52,7 @@ from scipy.stats import chi2
 
 #Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs', 'child', 'alarm']
 #dataset = input("Enter the dataset name ? \n")
-dataset = 'cancer'
+dataset = 'survey'
 
 #Select an algorithm from: ['curate', 'pc', 'privpc', 'svt', 'em']
 #algo = input("Enter the algorithm name ? \n")
@@ -203,10 +203,10 @@ def onlinebudgeting(budget, edges, order):
                                                            +(d2*x[1]*x[1])
                                                            +(d3*x[2]*x[2])
                                                            +(d4*x[3]*x[3]))
-                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d1*x[0]*x[0]))
-                                                                   +(np.sqrt(2*np.log(1/delta_prime)*(d2*x[1]*x[1])))
-                                                                   +(np.sqrt(2*np.log(1/delta_prime)*(d3*x[2]*x[2])))
-                                                                   +(np.sqrt(2*np.log(1/delta_prime)*(d4*x[3]*x[3])))))})
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d1*x[0]*x[0])))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d2*x[1]*x[1])))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d3*x[2]*x[2])))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d4*x[3]*x[3]))))})
             a = 0
             s = 0
             b = None
@@ -274,7 +274,6 @@ def onlinebudgeting(budget, edges, order):
             result = opt.minimize(fun, s, method = 'SLSQP',
                                   constraints=cons)
                                         #bounds = bnds, constraints=cons)
-
 
     return result.x
 #delta, _ = quad(lambda x: np.exp(-x**2/2) / np.sqrt(2*np.pi), 0, 6 / np.sqrt(n))
@@ -1388,6 +1387,15 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
     initial = comb(d,2)
     epsiloncurate = []
     while True:
+        if l == 0:
+            epsilon = results.x[0]
+        else:
+            value = onlinebudgeting(eps_rem,edges,l)
+            epsilon = value[0]
+            
+        #p = l
+        eps = np.log(1+(q*(np.exp(epsilon)-1)))
+        sigma = delta/eps
         cont = False
         remove_edges = []
         for (i, j) in permutations(node_ids, 2):
@@ -1407,15 +1415,6 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                 for k in combinations(adj_i, l):
                     _logger.debug('indep prob of %s and %s with subset %s'
                                   % (i, j, str(k)))
-                    if l == 0:
-                        epsilon = results.x[0]
-                    else:
-                        value = onlinebudgeting(eps_rem,edges,l)
-                        epsilon = value[0]
-            
-        #p = l
-                    eps = np.log(1+(q*(np.exp(epsilon)-1)))
-                    sigma = delta/eps
                     #print("order of test: ", l)
                     #print("epsilon: ", eps)
                     v = np.random.laplace(0, sigma)
@@ -1423,11 +1422,10 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                     _logger.debug('p_val is %s' % str(p_val))
                     if p_val < (T+(T*beta)) and p_val > (T-(T*beta)):
                         count = count+1
-                        current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
-                        if current< eps_rem:
-                            continue
-                        sd = randint(0,1000)
-                        seed(sd)
+                        #current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
+                        #if current< eps_rem:
+                        #    continue
+                        seed(10000)
                         # generate some integers
                         rand = randint(0,1)
                         if(rand==0):
@@ -1445,9 +1443,9 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
                         
                     if p_val > T+(T*beta):
                         count = count+1
-                        current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
-                        if current<eps_rem:
-                            continue
+                        #current = (count*eps*eps+np.sqrt(2*count*np.log(1/delta_prime)*eps*eps))
+                        #if current<eps_rem:
+                        #    continue
                         if g.has_edge(i, j):
                             _logger.debug('p: remove edge (%s, %s)' % (i, j))
                             if method_stable(kwargs):
