@@ -1820,15 +1820,15 @@ else:
                                                                     delta_ad = 1e-14,
                                                                     delta_total = 1e-10,
                                                                      indep_test_func = indeptest,data_matrix = dm,
-                                                                     max_reach = maxreach)
+                                                                    max_reach = maxreach)
         g = estimate_cpdag(skel_graph=G, sep_set=sep_set)
+        tests=[]
         f1_score = cal_f1(g.edges, g_answer.edges)
         totaleps_curate.append(np.sum(perorderleakage))
         totalf1_curate.append(f1_score)
         tests.append(np.sum(num))
         print("Every Order Leakage by CURATE: ", perorderleakage)
-
-
+        
 if algo == 'curate':
     print(algo)
     print("Total Leakage is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
