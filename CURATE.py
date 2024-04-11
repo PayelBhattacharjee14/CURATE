@@ -1,3 +1,17 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[17]:
+
+
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+#check minimization
+#check delta
+
 #Import all the necessary libraries
 
 import pandas as pd
@@ -6,6 +20,7 @@ from random import seed
 from random import randint
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
+#from math import comb
 import scipy
 from random import seed
 from random import randint
@@ -17,6 +32,8 @@ import networkx as nx
 from scipy.optimize import fsolve
 from itertools import combinations, permutations
 import logging
+_logger = logging.getLogger(__name__)
+#from gsq.ci_tests import ci_test_bin, ci_test_dis
 from collections import namedtuple
 import warnings
 from numpy import ma
@@ -25,36 +42,44 @@ from scipy.stats._stats import _kendall_dis
 import scipy.special as special
 from scipy.optimize import minimize
 import numpy as np
+#from gsq.ci_tests import ci_test_bin, ci_test_dis
 from scipy.stats import chi2
-_logger = logging.getLogger(__name__)
 
-#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs']
+
+
+# In[37]:
+
+
+#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs', 'child', 'alarm']
 #dataset = input("Enter the dataset name ? \n")
-dataset = 'cancer'
+dataset = 'survey'
 
 #Select an algorithm from: ['curate', 'pc', 'privpc', 'svt', 'em']
-#algo = Enter the CGD algorithm name ["CURATE"="curate","Priv-PC"="privpc","EMPC"="em", "SVTPC"="svt",]
+#algo = input("Enter the algorithm name ? \n")
 algo = 'curate'
 
-## Define parameters
-delta_total = 1e-12
-delta_prime = delta_total
-delta_ad = delta_total
+#
+delta_total = 1e-8
+delta_prime = 1e-12
+delta_ad = 1e-12
 
 #N = total number of samples in the dataset 100K
 #q = sub-sampling rate
 #T = test threshold
-# Test threshold margin beta_1=beta_2=beta
-# c1=c2=1
-
 N = 100000
 q = 1.0
 T = 0.05
 n = q*N
 alpha = T
-beta = 0.1
+beta = 0.2
 
-#Privacy budget input
+#q = float(input("Subsampling rate : \n"))
+#T = float(input("Threshold : \n"))
+
+
+# In[38]:
+
+
 if algo in ['curate']:
     epsilonpriv = None
     eps_total = float(input("Total Budget ? \n"))
@@ -71,7 +96,7 @@ if dataset in ['cancer','earthquake','asia']:
     taskval = 'bin'
 else:
     taskval = 'dis'
-# Defining the ground truth
+
 ground_truth = {
     "asia": [(0, 1), (1, 0), (1, 5), (2, 3), (2, 4), (3, 2), (3, 5), (4, 2), (4, 7), (7, 4)],
     "cancer": [(0, 2), (1, 2), (2, 3), (4, 2)],
@@ -79,9 +104,21 @@ ground_truth = {
     "survey": [(2, 3), (2, 4), (4, 2), (4, 5), (5, 3), (5, 4)],
     # "sachs": [(0, 1), (0, 7), (1, 0), (1, 3), (1, 7), (2, 7), (2, 8), (3, 1), (3, 7), (3, 8), (3, 10), (4, 7), (4, 8), (5, 6), (5, 9), (6, 5), (6, 9), (7, 0), (7, 1), (7, 2), (7, 3), (7, 4), (7, 8), (7, 10), (8, 2), (8, 3), (8, 4), (8, 7), (8, 10), (9, 5), (9, 6), (10, 3), (10, 7), (10, 8)],
     "sachs": [(0, 1), (1, 0), (1, 3), (1, 7), (2, 8), (3, 1), (3, 7), (3, 8), (3, 10), (4, 7), (4, 10), (5, 6), (5, 9), (6, 5), (6, 9), (7, 1), (7, 3), (7, 10), (8, 2), (8, 3), (8, 7), (9, 5), (9, 6)],
+    "child": [(0, 18), (1, 7), (2, 7), (2, 8), (2, 10), (2, 16), (3, 9), (3, 17), (4, 10), (4, 17), (4, 18), (5, 12), (6, 14), (8, 2), (8, 12), (9, 3), (11, 13), (11, 14), (11, 15), (11, 16), (11, 18), (12, 8), (13, 11), (13, 18), (13, 19), (14, 6), (14, 11), (15, 1), (15, 11), (16, 1), (16, 2), (16, 11), (17, 3), (17, 4), (17, 5), (19, 5), (19, 13)],
+    # 'child': [(1, 7), (2, 7), (2, 8), (3, 9), (3, 17), (4, 10), (5, 12), (6, 14), (9, 3), (11, 13), (11, 14), (11, 15), (11, 16), (11, 17), (11, 18), (11, 19), (13, 11), (13, 19), (14, 6), (14, 11), (15, 1), (15, 11), (16, 1), (16, 2), (16, 11), (17, 2), (17, 3), (17, 4), (17, 5), (17, 11), (18, 4), (18, 11), (19, 5), (19, 11), (19, 13)],
+    # 'alarm': [(0, 5), (1, 4), (2, 4), (3, 4), (3, 5), (3, 6), (4, 1), (4, 2), (4, 3), (4, 5), (5, 4), (5, 6), (6, 35), (7, 8), (9, 11), (10, 9), (10, 11), (11, 9), (12, 33), (13, 14), (14, 13), (14, 33), (14, 36), (16, 25), (17, 24), (17, 30), (18, 19), (19, 20), (20, 33), (21, 22), (22, 21), (22, 23), (23, 20), (24, 17), (24, 23), (24, 30), (24, 31), (26, 29), (27, 28), (28, 27), (28, 29), (29, 25), (30, 15), (30, 17), (30, 24), (30, 31), (31, 19), (31, 24), (31, 30), (31, 32), (32, 15), (32, 31), (32, 33), (34, 8), (34, 9), (34, 11), (34, 33), (34, 35), (35, 36)],
+    "alarm": [(0, 5), (0, 26), (1, 4), (2, 4), (3, 4), (3, 6), (4, 1), (4, 2), (4, 3), (5, 0), (5, 6), (6, 3), (6, 5), (6, 35), (7, 8), (7, 26), (9, 10), (9, 11), (10, 9), (10, 11), (11, 9), (11, 10), (12, 33), (13, 14), (14, 33), (14, 36), (16, 30), (16, 31), (17, 16), (17, 30), (17, 31), (18, 14), (18, 19), (19, 18), (19, 20), (20, 19), (20, 33), (21, 22), (22, 21), (22, 23), (24, 23), (25, 16), (25, 30), (27, 28), (28, 27), (28, 29), (29, 26), (29, 28), (30, 15), (30, 16), (30, 17), (30, 25), (30, 31), (31, 30), (31, 32), (32, 15), (32, 33), (34, 8), (34, 33), (34, 35), (35, 36)],
 }
 
-# adaptive privacy budget allocation
+
+# In[39]:
+
+
+
+
+# In[18]:
+
+
 def onlinebudgeting(budget, edges, order):
     if dataset in ['cancer', 'earthquake']:
         d = 5
@@ -143,7 +180,7 @@ def onlinebudgeting(budget, edges, order):
             result = opt.minimize(fun, s, method = 'SLSQP',
                                   constraints=cons)
                                         #bounds = bnds, constraints=cons)
-    elif dataset in ['survey']:
+    if dataset in ['survey']:
         d = 5
         if order == 1:
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
@@ -249,12 +286,12 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))))
             d1 = edges*comb(d-2,1)
             d2 = edges*comb(d-2,2)
             d3 = edges*comb(d-2,3)
@@ -287,16 +324,16 @@ def onlinebudgeting(budget, edges, order):
                                          bounds = bnds, constraints=cons)
             
         elif order == 2:
-            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+            lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))))
             d1 = edges*comb(d-2,2)
             d2 = edges*comb(d-2,3)
             d3 = edges*comb(d-2,4)
@@ -325,14 +362,14 @@ def onlinebudgeting(budget, edges, order):
                                          bounds = bnds, constraints=cons)
             
         elif order == 3:
-            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+            lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))))
             d1 = edges*comb(d-2,3)
             d2 = edges*comb(d-2,4)
             d3 = edges*comb(d-2,5)
@@ -356,12 +393,12 @@ def onlinebudgeting(budget, edges, order):
             result = opt.minimize(fun, (s,s,s,s), method = 'SLSQP',
                                          bounds = bnds, constraints=cons)
         elif order == 4:
-            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+            lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))))
             d1 = edges*comb(d-2,4)
             d2 = edges*comb(d-2,5)
             d3 = edges*comb(d-2,6)
@@ -381,10 +418,10 @@ def onlinebudgeting(budget, edges, order):
             result = opt.minimize(fun, (s,s,s), method = 'SLSQP',
                                          bounds = bnds, constraints=cons)
         elif order == 5:
-            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+            lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))))))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))))
             d1 = edges*comb(d-2,5)
             d2 = edges*comb(d-2,6)
             cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
@@ -401,7 +438,7 @@ def onlinebudgeting(budget, edges, order):
                                          bounds = bnds, constraints=cons)
         elif order == 6:
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))))))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))))
             d1 = edges*comb(d-2,6)
             cons = ({'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0]))
                                                            +np.sqrt(2*np.log(1/delta_prime)*
@@ -411,7 +448,7 @@ def onlinebudgeting(budget, edges, order):
             b = None
             result = opt.minimize(fun, s, method = 'SLSQP',
                                   constraints=cons)
-    elif dataset in ['sachs']:
+    if dataset in ['sachs']:
         d = 11
         if order == 1:
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
@@ -423,7 +460,7 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
@@ -431,7 +468,7 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta))))))
                         
             d1 = edges*comb(d-2,1)
             d2 = edges*comb(d-2,2)
@@ -484,14 +521,14 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta))))))
                         
             d1 = edges*comb(d-2,2)
             d2 = edges*comb(d-2,3)
@@ -539,13 +576,13 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))))
                         
             d1 = edges*comb(d-2,3)
             d2 = edges*comb(d-2,4)
@@ -588,12 +625,12 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))))
     
             d1 = edges*comb(d-2,4)
             d2 = edges*comb(d-2,5)
@@ -631,11 +668,11 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))))
     
             d1 = edges*comb(d-2,5)
             d2 = edges*comb(d-2,6)
@@ -668,10 +705,10 @@ def onlinebudgeting(budget, edges, order):
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))))
     
             d1 = edges*comb(d-2,6)
             d2 = edges*comb(d-2,7)
@@ -699,9 +736,9 @@ def onlinebudgeting(budget, edges, order):
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))))))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))))
                 
             d1 = edges*comb(d-2,7)
             d2 = edges*comb(d-2,8)
@@ -724,8 +761,8 @@ def onlinebudgeting(budget, edges, order):
         elif order == 8:
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
                         *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
-                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))))))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))))
                 
             d1 = edges*comb(d-2,8)
             d2 = edges*comb(d-2,9)
@@ -743,7 +780,7 @@ def onlinebudgeting(budget, edges, order):
                                          bounds = bnds, constraints=cons)
         elif order == 9:
             fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))+
-                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))))))
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))))
             d1 = edges*comb(d-2,9)
             cons = ({'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0]))
                                                            +np.sqrt(2*np.log(1/delta_prime)*
@@ -753,14 +790,5488 @@ def onlinebudgeting(budget, edges, order):
             b = None
             result = opt.minimize(fun, s, method = 'SLSQP',
                                   constraints=cons)
-    
+    elif dataset in ['child']:
+        if order == 1:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta))))))
+            d1 = edges*comb(d-2,1)
+            d2 = edges*comb(d-2,2)
+            d3 = edges*comb(d-2,3)
+            d4 = edges*comb(d-2,4)
+            d5 = edges*comb(d-2,5)
+            d6 = edges*comb(d-2,6)
+            d7 = edges*comb(d-2,7)
+            d8 = edges*comb(d-2,8)
+            d9 = edges*comb(d-2,9)
+            d10 = edges*comb(d-2,10)
+            d11 = edges*comb(d-2,11)
+            d12 = edges*comb(d-2,12)
+            d13 = edges*comb(d-2,13)
+            d14 = edges*comb(d-2,14)
+            d15 = edges*comb(d-2,15)
+            d16 = edges*comb(d-2,16)
+            d17 = edges*comb(d-2,17)
+            d18 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 2:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta))))))
+            d1 = edges*comb(d-2,2)
+            d2 = edges*comb(d-2,3)
+            d3 = edges*comb(d-2,4)
+            d4 = edges*comb(d-2,5)
+            d5 = edges*comb(d-2,6)
+            d6 = edges*comb(d-2,7)
+            d7 = edges*comb(d-2,8)
+            d8 = edges*comb(d-2,9)
+            d9 = edges*comb(d-2,10)
+            d10 = edges*comb(d-2,11)
+            d11 = edges*comb(d-2,12)
+            d12 = edges*comb(d-2,13)
+            d13 = edges*comb(d-2,14)
+            d14 = edges*comb(d-2,15)
+            d15 = edges*comb(d-2,16)
+            d16 = edges*comb(d-2,17)
+            d17 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 3:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,3)
+            d2 = edges*comb(d-2,4)
+            d3 = edges*comb(d-2,5)
+            d4 = edges*comb(d-2,6)
+            d5 = edges*comb(d-2,7)
+            d6 = edges*comb(d-2,8)
+            d7 = edges*comb(d-2,9)
+            d8 = edges*comb(d-2,10)
+            d9 = edges*comb(d-2,11)
+            d10 = edges*comb(d-2,12)
+            d11 = edges*comb(d-2,13)
+            d12 = edges*comb(d-2,14)
+            d13 = edges*comb(d-2,15)
+            d14 = edges*comb(d-2,16)
+            d15 = edges*comb(d-2,17)
+            d16 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 4:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,4)
+            d2 = edges*comb(d-2,5)
+            d3 = edges*comb(d-2,6)
+            d4 = edges*comb(d-2,7)
+            d5 = edges*comb(d-2,8)
+            d6 = edges*comb(d-2,9)
+            d7 = edges*comb(d-2,10)
+            d8 = edges*comb(d-2,11)
+            d9 = edges*comb(d-2,12)
+            d10 = edges*comb(d-2,13)
+            d11 = edges*comb(d-2,14)
+            d12 = edges*comb(d-2,15)
+            d13 = edges*comb(d-2,16)
+            d14 = edges*comb(d-2,17)
+            d15 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 5:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,5)
+            d2 = edges*comb(d-2,6)
+            d3 = edges*comb(d-2,7)
+            d4 = edges*comb(d-2,8)
+            d5 = edges*comb(d-2,9)
+            d6 = edges*comb(d-2,10)
+            d7 = edges*comb(d-2,11)
+            d8 = edges*comb(d-2,12)
+            d9 = edges*comb(d-2,13)
+            d10 = edges*comb(d-2,14)
+            d11 = edges*comb(d-2,15)
+            d12 = edges*comb(d-2,16)
+            d13 = edges*comb(d-2,17)
+            d14 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 6:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,6)
+            d2 = edges*comb(d-2,7)
+            d3 = edges*comb(d-2,8)
+            d4 = edges*comb(d-2,9)
+            d5 = edges*comb(d-2,10)
+            d6 = edges*comb(d-2,11)
+            d7 = edges*comb(d-2,12)
+            d8 = edges*comb(d-2,13)
+            d9 = edges*comb(d-2,14)
+            d10 = edges*comb(d-2,15)
+            d11 = edges*comb(d-2,16)
+            d12 = edges*comb(d-2,17)
+            d13 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 7:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,7)
+            d2 = edges*comb(d-2,8)
+            d3 = edges*comb(d-2,9)
+            d4 = edges*comb(d-2,10)
+            d5 = edges*comb(d-2,11)
+            d6 = edges*comb(d-2,12)
+            d7 = edges*comb(d-2,13)
+            d8 = edges*comb(d-2,14)
+            d9 = edges*comb(d-2,15)
+            d10 = edges*comb(d-2,16)
+            d11 = edges*comb(d-2,17)
+            d12 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 8:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,8)
+            d2 = edges*comb(d-2,9)
+            d3 = edges*comb(d-2,10)
+            d4 = edges*comb(d-2,11)
+            d5 = edges*comb(d-2,12)
+            d6 = edges*comb(d-2,13)
+            d7 = edges*comb(d-2,14)
+            d8 = edges*comb(d-2,15)
+            d9 = edges*comb(d-2,16)
+            d10 = edges*comb(d-2,17)
+            d11 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 9:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,9)
+            d2 = edges*comb(d-2,10)
+            d3 = edges*comb(d-2,11)
+            d4 = edges*comb(d-2,12)
+            d5 = edges*comb(d-2,13)
+            d6 = edges*comb(d-2,14)
+            d7 = edges*comb(d-2,15)
+            d8 = edges*comb(d-2,16)
+            d9 = edges*comb(d-2,17)
+            d10 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 10:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,10)
+            d2 = edges*comb(d-2,11)
+            d3 = edges*comb(d-2,12)
+            d4 = edges*comb(d-2,13)
+            d5 = edges*comb(d-2,14)
+            d6 = edges*comb(d-2,15)
+            d7 = edges*comb(d-2,16)
+            d8 = edges*comb(d-2,17)
+            d9 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 11:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,11)
+            d2 = edges*comb(d-2,12)
+            d3 = edges*comb(d-2,13)
+            d4 = edges*comb(d-2,14)
+            d5 = edges*comb(d-2,15)
+            d6 = edges*comb(d-2,16)
+            d7 = edges*comb(d-2,17)
+            d8 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 12:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,12)
+            d2 = edges*comb(d-2,13)
+            d3 = edges*comb(d-2,14)
+            d4 = edges*comb(d-2,15)
+            d5 = edges*comb(d-2,16)
+            d6 = edges*comb(d-2,17)
+            d7 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 13:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,13)
+            d2 = edges*comb(d-2,14)
+            d3 = edges*comb(d-2,15)
+            d4 = edges*comb(d-2,16)
+            d5 = edges*comb(d-2,17)
+            d6 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b),(a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 14:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,14)
+            d2 = edges*comb(d-2,15)
+            d3 = edges*comb(d-2,16)
+            d4 = edges*comb(d-2,17)
+            d5 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 15:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,15)
+            d2 = edges*comb(d-2,16)
+            d3 = edges*comb(d-2,17)
+            d4 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 16:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,16)
+            d2 = edges*comb(d-2,17)
+            d3 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b), (a,b))
+            result = opt.minimize(fun, (s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 17:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,17)
+            d2 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a,b), (a,b))
+            result = opt.minimize(fun, (s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+        elif order == 18:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))))
+            d1 = edges*comb(d-2,18)
+            cons = ({'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0]))))})
+            a = 0
+            s = 0
+            b = None
+            result = opt.minimize(fun, s, method = 'SLSQP',
+                                  constraints=cons)
     else:
-        print("Not a valid dataset")
-        
+        if order == 1:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[33])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[34])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[33])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[34])-1))))/delta))))))
+            d1 = edges*comb(d-2,1)
+            d2 = edges*comb(d-2,2)
+            d3 = edges*comb(d-2,3)
+            d4 = edges*comb(d-2,4)
+            d5 = edges*comb(d-2,5)
+            d6 = edges*comb(d-2,6)
+            d7 = edges*comb(d-2,7)
+            d8 = edges*comb(d-2,8)
+            d9 = edges*comb(d-2,9)
+            d10 = edges*comb(d-2,10)
+            d11 = edges*comb(d-2,11)
+            d12 = edges*comb(d-2,12)
+            d13 = edges*comb(d-2,13)
+            d14 = edges*comb(d-2,14)
+            d15 = edges*comb(d-2,15)
+            d16 = edges*comb(d-2,16)
+            d17 = edges*comb(d-2,17)
+            d18 = edges*comb(d-2,18)
+            d19 = edges*comb(d-2,19)
+            d20 = edges*comb(d-2,20)
+            d21 = edges*comb(d-2,21)
+            d22 = edges*comb(d-2,22)
+            d23 = edges*comb(d-2,23)
+            d24 = edges*comb(d-2,24)
+            d25 = edges*comb(d-2,25)
+            d26 = edges*comb(d-2,26)
+            d27 = edges*comb(d-2,27)
+            d28 = edges*comb(d-2,28)
+            d29 = edges*comb(d-2,29)
+            d30 = edges*comb(d-2,30)
+            d31 = edges*comb(d-2,31)
+            d32 = edges*comb(d-2,32)
+            d33 = edges*comb(d-2,33)
+            d34 = edges*comb(d-2,34)
+            d35 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  x[28] - x[29]},
+                {'type': 'ineq', 'fun': lambda x:  x[29] - x[30]},
+                {'type': 'ineq', 'fun': lambda x:  x[30] - x[31]},
+                {'type': 'ineq', 'fun': lambda x:  x[31] - x[32]},
+                {'type': 'ineq', 'fun': lambda x:  x[32] - x[33]},
+                {'type': 'ineq', 'fun': lambda x:  x[33] - x[34]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31])
+                                                           +(d33*x[32]*x[32])
+                                                           +(d34*x[33]*x[33])
+                                                           +(d35*x[34]*x[34]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31])
+                                                           +(d33*x[32]*x[32])
+                                                           +(d34*x[33]*x[33])
+                                                           +(d35*x[34]*x[34]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 2:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[33])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[33])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,2)
+            d2 = edges*comb(d-2,3)
+            d3 = edges*comb(d-2,4)
+            d4 = edges*comb(d-2,5)
+            d5 = edges*comb(d-2,6)
+            d6 = edges*comb(d-2,7)
+            d7 = edges*comb(d-2,8)
+            d8 = edges*comb(d-2,9)
+            d9 = edges*comb(d-2,10)
+            d10 = edges*comb(d-2,11)
+            d11 = edges*comb(d-2,12)
+            d12 = edges*comb(d-2,13)
+            d13 = edges*comb(d-2,14)
+            d14 = edges*comb(d-2,15)
+            d15 = edges*comb(d-2,16)
+            d16 = edges*comb(d-2,17)
+            d17 = edges*comb(d-2,18)
+            d18 = edges*comb(d-2,19)
+            d19 = edges*comb(d-2,20)
+            d20 = edges*comb(d-2,21)
+            d21 = edges*comb(d-2,22)
+            d22 = edges*comb(d-2,23)
+            d23 = edges*comb(d-2,24)
+            d24 = edges*comb(d-2,25)
+            d25 = edges*comb(d-2,26)
+            d26 = edges*comb(d-2,27)
+            d27 = edges*comb(d-2,28)
+            d28 = edges*comb(d-2,29)
+            d29 = edges*comb(d-2,30)
+            d30 = edges*comb(d-2,31)
+            d31 = edges*comb(d-2,32)
+            d32 = edges*comb(d-2,33)
+            d33 = edges*comb(d-2,34)
+            d34 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  x[28] - x[29]},
+                {'type': 'ineq', 'fun': lambda x:  x[29] - x[30]},
+                {'type': 'ineq', 'fun': lambda x:  x[30] - x[31]},
+                {'type': 'ineq', 'fun': lambda x:  x[31] - x[32]},
+                {'type': 'ineq', 'fun': lambda x:  x[32] - x[33]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31])
+                                                           +(d33*x[32]*x[32])
+                                                           +(d34*x[33]*x[33]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31])
+                                                           +(d33*x[32]*x[32])
+                                                           +(d34*x[33]*x[33]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 3:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,3)
+            d2 = edges*comb(d-2,4)
+            d3 = edges*comb(d-2,5)
+            d4 = edges*comb(d-2,6)
+            d5 = edges*comb(d-2,7)
+            d6 = edges*comb(d-2,8)
+            d7 = edges*comb(d-2,9)
+            d8 = edges*comb(d-2,10)
+            d9 = edges*comb(d-2,11)
+            d10 = edges*comb(d-2,12)
+            d11 = edges*comb(d-2,13)
+            d12 = edges*comb(d-2,14)
+            d13 = edges*comb(d-2,15)
+            d14 = edges*comb(d-2,16)
+            d15 = edges*comb(d-2,17)
+            d16 = edges*comb(d-2,18)
+            d17 = edges*comb(d-2,19)
+            d18 = edges*comb(d-2,20)
+            d19 = edges*comb(d-2,21)
+            d20 = edges*comb(d-2,22)
+            d21 = edges*comb(d-2,23)
+            d22 = edges*comb(d-2,24)
+            d23 = edges*comb(d-2,25)
+            d24 = edges*comb(d-2,26)
+            d25 = edges*comb(d-2,27)
+            d26 = edges*comb(d-2,28)
+            d27 = edges*comb(d-2,29)
+            d28 = edges*comb(d-2,30)
+            d29 = edges*comb(d-2,31)
+            d30 = edges*comb(d-2,32)
+            d31 = edges*comb(d-2,33)
+            d32 = edges*comb(d-2,34)
+            d33 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  x[28] - x[29]},
+                {'type': 'ineq', 'fun': lambda x:  x[29] - x[30]},
+                {'type': 'ineq', 'fun': lambda x:  x[30] - x[31]},
+                {'type': 'ineq', 'fun': lambda x:  x[31] - x[32]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31])
+                                                           +(d33*x[32]*x[32]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31])
+                                                           +(d33*x[32]*x[32]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 4:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,4)
+            d2 = edges*comb(d-2,5)
+            d3 = edges*comb(d-2,6)
+            d4 = edges*comb(d-2,7)
+            d5 = edges*comb(d-2,8)
+            d6 = edges*comb(d-2,9)
+            d7 = edges*comb(d-2,10)
+            d8 = edges*comb(d-2,11)
+            d9 = edges*comb(d-2,12)
+            d10 = edges*comb(d-2,13)
+            d11 = edges*comb(d-2,14)
+            d12 = edges*comb(d-2,15)
+            d13 = edges*comb(d-2,16)
+            d14 = edges*comb(d-2,17)
+            d15 = edges*comb(d-2,18)
+            d16 = edges*comb(d-2,19)
+            d17 = edges*comb(d-2,20)
+            d18 = edges*comb(d-2,21)
+            d19 = edges*comb(d-2,22)
+            d20 = edges*comb(d-2,23)
+            d21 = edges*comb(d-2,24)
+            d22 = edges*comb(d-2,25)
+            d23 = edges*comb(d-2,26)
+            d24 = edges*comb(d-2,27)
+            d25 = edges*comb(d-2,28)
+            d26 = edges*comb(d-2,29)
+            d27 = edges*comb(d-2,30)
+            d28 = edges*comb(d-2,31)
+            d29 = edges*comb(d-2,32)
+            d30 = edges*comb(d-2,33)
+            d31 = edges*comb(d-2,34)
+            d32 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  x[28] - x[29]},
+                {'type': 'ineq', 'fun': lambda x:  x[29] - x[30]},
+                {'type': 'ineq', 'fun': lambda x:  x[30] - x[31]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30])
+                                                           +(d32*x[31]*x[31]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 5:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,5)
+            d2 = edges*comb(d-2,6)
+            d3 = edges*comb(d-2,7)
+            d4 = edges*comb(d-2,8)
+            d5 = edges*comb(d-2,9)
+            d6 = edges*comb(d-2,10)
+            d7 = edges*comb(d-2,11)
+            d8 = edges*comb(d-2,12)
+            d9 = edges*comb(d-2,13)
+            d10 = edges*comb(d-2,14)
+            d11 = edges*comb(d-2,15)
+            d12 = edges*comb(d-2,16)
+            d13 = edges*comb(d-2,17)
+            d14 = edges*comb(d-2,18)
+            d15 = edges*comb(d-2,19)
+            d16 = edges*comb(d-2,20)
+            d17 = edges*comb(d-2,21)
+            d18 = edges*comb(d-2,22)
+            d19 = edges*comb(d-2,23)
+            d20 = edges*comb(d-2,24)
+            d21 = edges*comb(d-2,25)
+            d22 = edges*comb(d-2,26)
+            d23 = edges*comb(d-2,27)
+            d24 = edges*comb(d-2,28)
+            d25 = edges*comb(d-2,29)
+            d26 = edges*comb(d-2,30)
+            d27 = edges*comb(d-2,31)
+            d28 = edges*comb(d-2,32)
+            d29 = edges*comb(d-2,33)
+            d30 = edges*comb(d-2,34)
+            d31 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  x[28] - x[29]},
+                {'type': 'ineq', 'fun': lambda x:  x[29] - x[30]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29])
+                                                           +(d31*x[30]*x[30]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 6:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,6)
+            d2 = edges*comb(d-2,7)
+            d3 = edges*comb(d-2,8)
+            d4 = edges*comb(d-2,9)
+            d5 = edges*comb(d-2,10)
+            d6 = edges*comb(d-2,11)
+            d7 = edges*comb(d-2,12)
+            d8 = edges*comb(d-2,13)
+            d9 = edges*comb(d-2,14)
+            d10 = edges*comb(d-2,15)
+            d11 = edges*comb(d-2,16)
+            d12 = edges*comb(d-2,17)
+            d13 = edges*comb(d-2,18)
+            d14 = edges*comb(d-2,19)
+            d15 = edges*comb(d-2,20)
+            d16 = edges*comb(d-2,21)
+            d17 = edges*comb(d-2,22)
+            d18 = edges*comb(d-2,23)
+            d19 = edges*comb(d-2,24)
+            d20 = edges*comb(d-2,25)
+            d21 = edges*comb(d-2,26)
+            d22 = edges*comb(d-2,27)
+            d23 = edges*comb(d-2,28)
+            d24 = edges*comb(d-2,29)
+            d25 = edges*comb(d-2,30)
+            d26 = edges*comb(d-2,31)
+            d27 = edges*comb(d-2,32)
+            d28 = edges*comb(d-2,33)
+            d29 = edges*comb(d-2,34)
+            d30 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  x[28] - x[29]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28])
+                                                           +(d30*x[29]*x[29]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 7:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,7)
+            d2 = edges*comb(d-2,8)
+            d3 = edges*comb(d-2,9)
+            d4 = edges*comb(d-2,10)
+            d5 = edges*comb(d-2,11)
+            d6 = edges*comb(d-2,12)
+            d7 = edges*comb(d-2,13)
+            d8 = edges*comb(d-2,14)
+            d9 = edges*comb(d-2,15)
+            d10 = edges*comb(d-2,16)
+            d11 = edges*comb(d-2,17)
+            d12 = edges*comb(d-2,18)
+            d13 = edges*comb(d-2,19)
+            d14 = edges*comb(d-2,20)
+            d15 = edges*comb(d-2,21)
+            d16 = edges*comb(d-2,22)
+            d17 = edges*comb(d-2,23)
+            d18 = edges*comb(d-2,24)
+            d19 = edges*comb(d-2,25)
+            d20 = edges*comb(d-2,26)
+            d21 = edges*comb(d-2,27)
+            d22 = edges*comb(d-2,28)
+            d23 = edges*comb(d-2,29)
+            d24 = edges*comb(d-2,30)
+            d25 = edges*comb(d-2,31)
+            d26 = edges*comb(d-2,32)
+            d27 = edges*comb(d-2,33)
+            d28 = edges*comb(d-2,34)
+            d29 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27])
+                                                           +(d29*x[28]*x[28]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 8:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,8)
+            d2 = edges*comb(d-2,9)
+            d3 = edges*comb(d-2,10)
+            d4 = edges*comb(d-2,11)
+            d5 = edges*comb(d-2,12)
+            d6 = edges*comb(d-2,13)
+            d7 = edges*comb(d-2,14)
+            d8 = edges*comb(d-2,15)
+            d9 = edges*comb(d-2,16)
+            d10 = edges*comb(d-2,17)
+            d11 = edges*comb(d-2,18)
+            d12 = edges*comb(d-2,19)
+            d13 = edges*comb(d-2,20)
+            d14 = edges*comb(d-2,21)
+            d15 = edges*comb(d-2,22)
+            d16 = edges*comb(d-2,23)
+            d17 = edges*comb(d-2,24)
+            d18 = edges*comb(d-2,25)
+            d19 = edges*comb(d-2,26)
+            d20 = edges*comb(d-2,27)
+            d21 = edges*comb(d-2,28)
+            d22 = edges*comb(d-2,29)
+            d23 = edges*comb(d-2,30)
+            d24 = edges*comb(d-2,31)
+            d25 = edges*comb(d-2,32)
+            d26 = edges*comb(d-2,33)
+            d27 = edges*comb(d-2,34)
+            d28 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26])
+                                                           +(d28*x[27]*x[27]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 9:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,9)
+            d2 = edges*comb(d-2,10)
+            d3 = edges*comb(d-2,11)
+            d4 = edges*comb(d-2,12)
+            d5 = edges*comb(d-2,13)
+            d6 = edges*comb(d-2,14)
+            d7 = edges*comb(d-2,15)
+            d8 = edges*comb(d-2,16)
+            d9 = edges*comb(d-2,17)
+            d10 = edges*comb(d-2,18)
+            d11 = edges*comb(d-2,19)
+            d12 = edges*comb(d-2,20)
+            d13 = edges*comb(d-2,21)
+            d14 = edges*comb(d-2,22)
+            d15 = edges*comb(d-2,23)
+            d16 = edges*comb(d-2,24)
+            d17 = edges*comb(d-2,25)
+            d18 = edges*comb(d-2,26)
+            d19 = edges*comb(d-2,27)
+            d20 = edges*comb(d-2,28)
+            d21 = edges*comb(d-2,29)
+            d22 = edges*comb(d-2,30)
+            d23 = edges*comb(d-2,31)
+            d24 = edges*comb(d-2,32)
+            d25 = edges*comb(d-2,33)
+            d26 = edges*comb(d-2,34)
+            d27 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25])
+                                                           +(d27*x[26]*x[26]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 10:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,10)
+            d2 = edges*comb(d-2,11)
+            d3 = edges*comb(d-2,12)
+            d4 = edges*comb(d-2,13)
+            d5 = edges*comb(d-2,14)
+            d6 = edges*comb(d-2,15)
+            d7 = edges*comb(d-2,16)
+            d8 = edges*comb(d-2,17)
+            d9 = edges*comb(d-2,18)
+            d10 = edges*comb(d-2,19)
+            d11 = edges*comb(d-2,20)
+            d12 = edges*comb(d-2,21)
+            d13 = edges*comb(d-2,22)
+            d14 = edges*comb(d-2,23)
+            d15 = edges*comb(d-2,24)
+            d16 = edges*comb(d-2,25)
+            d17 = edges*comb(d-2,26)
+            d18 = edges*comb(d-2,27)
+            d19 = edges*comb(d-2,28)
+            d20 = edges*comb(d-2,29)
+            d21 = edges*comb(d-2,30)
+            d22 = edges*comb(d-2,31)
+            d23 = edges*comb(d-2,32)
+            d24 = edges*comb(d-2,33)
+            d25 = edges*comb(d-2,34)
+            d26 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24])
+                                                           +(d26*x[25]*x[25]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 11:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,11)
+            d2 = edges*comb(d-2,12)
+            d3 = edges*comb(d-2,13)
+            d4 = edges*comb(d-2,14)
+            d5 = edges*comb(d-2,15)
+            d6 = edges*comb(d-2,16)
+            d7 = edges*comb(d-2,17)
+            d8 = edges*comb(d-2,18)
+            d9 = edges*comb(d-2,19)
+            d10 = edges*comb(d-2,20)
+            d11 = edges*comb(d-2,21)
+            d12 = edges*comb(d-2,22)
+            d13 = edges*comb(d-2,23)
+            d14 = edges*comb(d-2,24)
+            d15 = edges*comb(d-2,25)
+            d16 = edges*comb(d-2,26)
+            d17 = edges*comb(d-2,27)
+            d18 = edges*comb(d-2,28)
+            d19 = edges*comb(d-2,29)
+            d20 = edges*comb(d-2,30)
+            d21 = edges*comb(d-2,31)
+            d22 = edges*comb(d-2,32)
+            d23 = edges*comb(d-2,33)
+            d24 = edges*comb(d-2,34)
+            d25 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23])
+                                                           +(d25*x[24]*x[24]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 12:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,12)
+            d2 = edges*comb(d-2,13)
+            d3 = edges*comb(d-2,14)
+            d4 = edges*comb(d-2,15)
+            d5 = edges*comb(d-2,16)
+            d6 = edges*comb(d-2,17)
+            d7 = edges*comb(d-2,18)
+            d8 = edges*comb(d-2,19)
+            d9 = edges*comb(d-2,20)
+            d10 = edges*comb(d-2,21)
+            d11 = edges*comb(d-2,22)
+            d12 = edges*comb(d-2,23)
+            d13 = edges*comb(d-2,24)
+            d14 = edges*comb(d-2,25)
+            d15 = edges*comb(d-2,26)
+            d16 = edges*comb(d-2,27)
+            d17 = edges*comb(d-2,28)
+            d18 = edges*comb(d-2,29)
+            d19 = edges*comb(d-2,30)
+            d20 = edges*comb(d-2,31)
+            d21 = edges*comb(d-2,32)
+            d22 = edges*comb(d-2,33)
+            d23 = edges*comb(d-2,34)
+            d24 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22])
+                                                           +(d24*x[23]*x[23]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 13:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,13)
+            d2 = edges*comb(d-2,14)
+            d3 = edges*comb(d-2,15)
+            d4 = edges*comb(d-2,16)
+            d5 = edges*comb(d-2,17)
+            d6 = edges*comb(d-2,18)
+            d7 = edges*comb(d-2,19)
+            d8 = edges*comb(d-2,20)
+            d9 = edges*comb(d-2,21)
+            d10 = edges*comb(d-2,22)
+            d11 = edges*comb(d-2,23)
+            d12 = edges*comb(d-2,24)
+            d13 = edges*comb(d-2,25)
+            d14 = edges*comb(d-2,26)
+            d15 = edges*comb(d-2,27)
+            d16 = edges*comb(d-2,28)
+            d17 = edges*comb(d-2,29)
+            d18 = edges*comb(d-2,30)
+            d19 = edges*comb(d-2,31)
+            d20 = edges*comb(d-2,32)
+            d21 = edges*comb(d-2,33)
+            d22 = edges*comb(d-2,34)
+            d23 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21])
+                                                           +(d23*x[22]*x[22]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 14:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,14)
+            d2 = edges*comb(d-2,15)
+            d3 = edges*comb(d-2,16)
+            d4 = edges*comb(d-2,17)
+            d5 = edges*comb(d-2,18)
+            d6 = edges*comb(d-2,19)
+            d7 = edges*comb(d-2,20)
+            d8 = edges*comb(d-2,21)
+            d9 = edges*comb(d-2,22)
+            d10 = edges*comb(d-2,23)
+            d11 = edges*comb(d-2,24)
+            d12 = edges*comb(d-2,25)
+            d13 = edges*comb(d-2,26)
+            d14 = edges*comb(d-2,27)
+            d15 = edges*comb(d-2,28)
+            d16 = edges*comb(d-2,29)
+            d17 = edges*comb(d-2,30)
+            d18 = edges*comb(d-2,31)
+            d19 = edges*comb(d-2,32)
+            d20 = edges*comb(d-2,33)
+            d21 = edges*comb(d-2,34)
+            d22 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20])
+                                                           +(d22*x[21]*x[21]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 15:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,15)
+            d2 = edges*comb(d-2,16)
+            d3 = edges*comb(d-2,17)
+            d4 = edges*comb(d-2,18)
+            d5 = edges*comb(d-2,19)
+            d6 = edges*comb(d-2,20)
+            d7 = edges*comb(d-2,21)
+            d8 = edges*comb(d-2,22)
+            d9 = edges*comb(d-2,23)
+            d10 = edges*comb(d-2,24)
+            d11 = edges*comb(d-2,25)
+            d12 = edges*comb(d-2,26)
+            d13 = edges*comb(d-2,27)
+            d14 = edges*comb(d-2,28)
+            d15 = edges*comb(d-2,29)
+            d16 = edges*comb(d-2,30)
+            d17 = edges*comb(d-2,31)
+            d18 = edges*comb(d-2,32)
+            d19 = edges*comb(d-2,33)
+            d20 = edges*comb(d-2,34)
+            d21 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19])
+                                                           +(d21*x[20]*x[20]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 16:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,16)
+            d2 = edges*comb(d-2,17)
+            d3 = edges*comb(d-2,18)
+            d4 = edges*comb(d-2,19)
+            d5 = edges*comb(d-2,20)
+            d6 = edges*comb(d-2,21)
+            d7 = edges*comb(d-2,22)
+            d8 = edges*comb(d-2,23)
+            d9 = edges*comb(d-2,24)
+            d10 = edges*comb(d-2,25)
+            d11 = edges*comb(d-2,26)
+            d12 = edges*comb(d-2,27)
+            d13 = edges*comb(d-2,28)
+            d14 = edges*comb(d-2,29)
+            d15 = edges*comb(d-2,30)
+            d16 = edges*comb(d-2,31)
+            d17 = edges*comb(d-2,32)
+            d18 = edges*comb(d-2,33)
+            d19 = edges*comb(d-2,34)
+            d20 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18])
+                                                           +(d20*x[19]*x[19]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 17:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,17)
+            d2 = edges*comb(d-2,18)
+            d3 = edges*comb(d-2,19)
+            d4 = edges*comb(d-2,20)
+            d5 = edges*comb(d-2,21)
+            d6 = edges*comb(d-2,22)
+            d7 = edges*comb(d-2,23)
+            d8 = edges*comb(d-2,24)
+            d9 = edges*comb(d-2,25)
+            d10 = edges*comb(d-2,26)
+            d11 = edges*comb(d-2,27)
+            d12 = edges*comb(d-2,28)
+            d13 = edges*comb(d-2,29)
+            d14 = edges*comb(d-2,30)
+            d15 = edges*comb(d-2,31)
+            d16 = edges*comb(d-2,32)
+            d17 = edges*comb(d-2,33)
+            d18 = edges*comb(d-2,34)
+            d19 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17])
+                                                           +(d19*x[18]*x[18]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 18:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,18)
+            d2 = edges*comb(d-2,19)
+            d3 = edges*comb(d-2,20)
+            d4 = edges*comb(d-2,21)
+            d5 = edges*comb(d-2,22)
+            d6 = edges*comb(d-2,23)
+            d7 = edges*comb(d-2,24)
+            d8 = edges*comb(d-2,25)
+            d9 = edges*comb(d-2,26)
+            d10 = edges*comb(d-2,27)
+            d11 = edges*comb(d-2,28)
+            d12 = edges*comb(d-2,29)
+            d13 = edges*comb(d-2,30)
+            d14 = edges*comb(d-2,31)
+            d15 = edges*comb(d-2,32)
+            d16 = edges*comb(d-2,33)
+            d17 = edges*comb(d-2,34)
+            d18 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16])
+                                                           +(d18*x[17]*x[17]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 19:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,19)
+            d2 = edges*comb(d-2,20)
+            d3 = edges*comb(d-2,21)
+            d4 = edges*comb(d-2,22)
+            d5 = edges*comb(d-2,23)
+            d6 = edges*comb(d-2,24)
+            d7 = edges*comb(d-2,25)
+            d8 = edges*comb(d-2,26)
+            d9 = edges*comb(d-2,27)
+            d10 = edges*comb(d-2,28)
+            d11 = edges*comb(d-2,29)
+            d12 = edges*comb(d-2,30)
+            d13 = edges*comb(d-2,31)
+            d14 = edges*comb(d-2,32)
+            d15 = edges*comb(d-2,33)
+            d16 = edges*comb(d-2,34)
+            d17 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15])
+                                                           +(d17*x[16]*x[16]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 20:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,20)
+            d2 = edges*comb(d-2,21)
+            d3 = edges*comb(d-2,22)
+            d4 = edges*comb(d-2,23)
+            d5 = edges*comb(d-2,24)
+            d6 = edges*comb(d-2,25)
+            d7 = edges*comb(d-2,26)
+            d8 = edges*comb(d-2,27)
+            d9 = edges*comb(d-2,28)
+            d10 = edges*comb(d-2,29)
+            d11 = edges*comb(d-2,30)
+            d12 = edges*comb(d-2,31)
+            d13 = edges*comb(d-2,32)
+            d14 = edges*comb(d-2,33)
+            d15 = edges*comb(d-2,34)
+            d16 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14])
+                                                           +(d16*x[15]*x[15]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b),
+            (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 21:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,21)
+            d2 = edges*comb(d-2,22)
+            d3 = edges*comb(d-2,23)
+            d4 = edges*comb(d-2,24)
+            d5 = edges*comb(d-2,25)
+            d6 = edges*comb(d-2,26)
+            d7 = edges*comb(d-2,27)
+            d8 = edges*comb(d-2,28)
+            d9 = edges*comb(d-2,29)
+            d10 = edges*comb(d-2,30)
+            d11 = edges*comb(d-2,31)
+            d12 = edges*comb(d-2,32)
+            d13 = edges*comb(d-2,33)
+            d14 = edges*comb(d-2,34)
+            d15 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13])
+                                                           +(d15*x[14]*x[14]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 22:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,22)
+            d2 = edges*comb(d-2,23)
+            d3 = edges*comb(d-2,24)
+            d4 = edges*comb(d-2,25)
+            d5 = edges*comb(d-2,26)
+            d6 = edges*comb(d-2,27)
+            d7 = edges*comb(d-2,28)
+            d8 = edges*comb(d-2,29)
+            d9 = edges*comb(d-2,30)
+            d10 = edges*comb(d-2,31)
+            d11 = edges*comb(d-2,32)
+            d12 = edges*comb(d-2,33)
+            d13 = edges*comb(d-2,34)
+            d14 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12])
+                                                           +(d14*x[13]*x[13]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 23:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,23)
+            d2 = edges*comb(d-2,24)
+            d3 = edges*comb(d-2,25)
+            d4 = edges*comb(d-2,26)
+            d5 = edges*comb(d-2,27)
+            d6 = edges*comb(d-2,28)
+            d7 = edges*comb(d-2,29)
+            d8 = edges*comb(d-2,30)
+            d9 = edges*comb(d-2,31)
+            d10 = edges*comb(d-2,32)
+            d11 = edges*comb(d-2,33)
+            d12 = edges*comb(d-2,34)
+            d13 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11])
+                                                           +(d13*x[12]*x[12]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b),(a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 24:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,24)
+            d2 = edges*comb(d-2,25)
+            d3 = edges*comb(d-2,26)
+            d4 = edges*comb(d-2,27)
+            d5 = edges*comb(d-2,28)
+            d6 = edges*comb(d-2,29)
+            d7 = edges*comb(d-2,30)
+            d8 = edges*comb(d-2,31)
+            d9 = edges*comb(d-2,32)
+            d10 = edges*comb(d-2,33)
+            d11 = edges*comb(d-2,34)
+            d12 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10])
+                                                           +(d12*x[11]*x[11]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s
+                                ,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 25:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,25)
+            d2 = edges*comb(d-2,26)
+            d3 = edges*comb(d-2,27)
+            d4 = edges*comb(d-2,28)
+            d5 = edges*comb(d-2,29)
+            d6 = edges*comb(d-2,30)
+            d7 = edges*comb(d-2,31)
+            d8 = edges*comb(d-2,32)
+            d9 = edges*comb(d-2,33)
+            d10 = edges*comb(d-2,34)
+            d11 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9])
+                                                           +(d11*x[10]*x[10]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s
+                                ,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 26:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,26)
+            d2 = edges*comb(d-2,27)
+            d3 = edges*comb(d-2,28)
+            d4 = edges*comb(d-2,29)
+            d5 = edges*comb(d-2,30)
+            d6 = edges*comb(d-2,31)
+            d7 = edges*comb(d-2,32)
+            d8 = edges*comb(d-2,33)
+            d9 = edges*comb(d-2,34)
+            d10 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8])
+                                                           +(d10*x[9]*x[9]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b),
+            (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s
+                                ,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 27:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,27)
+            d2 = edges*comb(d-2,28)
+            d3 = edges*comb(d-2,29)
+            d4 = edges*comb(d-2,30)
+            d5 = edges*comb(d-2,31)
+            d6 = edges*comb(d-2,32)
+            d7 = edges*comb(d-2,33)
+            d8 = edges*comb(d-2,34)
+            d9 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7])
+                                                           +(d9*x[8]*x[8]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),(a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 28:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,28)
+            d2 = edges*comb(d-2,29)
+            d3 = edges*comb(d-2,30)
+            d4 = edges*comb(d-2,31)
+            d5 = edges*comb(d-2,32)
+            d6 = edges*comb(d-2,33)
+            d7 = edges*comb(d-2,34)
+            d8 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6])
+                                                           +(d8*x[7]*x[7]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),(a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 29:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,29)
+            d2 = edges*comb(d-2,30)
+            d3 = edges*comb(d-2,31)
+            d4 = edges*comb(d-2,32)
+            d5 = edges*comb(d-2,33)
+            d6 = edges*comb(d-2,34)
+            d7 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),(a, b),
+            (a, b), (a, b),(a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 30:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,30)
+            d2 = edges*comb(d-2,31)
+            d3 = edges*comb(d-2,32)
+            d4 = edges*comb(d-2,33)
+            d5 = edges*comb(d-2,34)
+            d6 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),(a, b),
+            (a, b),(a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 29:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,29)
+            d2 = edges*comb(d-2,30)
+            d3 = edges*comb(d-2,31)
+            d4 = edges*comb(d-2,32)
+            d5 = edges*comb(d-2,33)
+            d6 = edges*comb(d-2,34)
+            d7 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4])
+                                                           +(d6*x[5]*x[5])
+                                                           +(d7*x[6]*x[6]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),(a, b),
+            (a, b), (a, b),(a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 31:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,31)
+            d2 = edges*comb(d-2,32)
+            d3 = edges*comb(d-2,33)
+            d4 = edges*comb(d-2,34)
+            d5 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3])
+                                                           +(d5*x[4]*x[4]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b),(a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 32:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,32)
+            d2 = edges*comb(d-2,33)
+            d3 = edges*comb(d-2,34)
+            d4 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2])
+                                                           +(d4*x[3]*x[3]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),
+            (a, b), (a, b))
+            result =opt.minimize(fun, (s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 33:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta))))))
+
+            d1 = edges*comb(d-2,33)
+            d2 = edges*comb(d-2,34)
+            d3 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1])
+                                                           +(d3*x[2]*x[2]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b),(a, b))
+            result =opt.minimize(fun, (s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 34:
+            d = 37
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta))))))
+            d1 = edges*comb(d-2,34)
+            d2 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0])
+                                                           +(d2*x[1]*x[1]))))})
+            a = 0
+            s = 0
+            b = None
+            bnds = ((a, b), (a, b))
+            result =opt.minimize(fun, (s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+        elif order == 35:
+            d = 20
+            fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))+
+                        (((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta))))))
+            d1 = edges*comb(d-2,35)
+            cons = ({'type': 'ineq', 'fun': lambda x:  eps_total - (((d1*x[0]*x[0]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d1*x[0]*x[0]))))})
+            a = 0
+            s = 0
+            b = None
+            result = opt.minimize(fun, s, method = 'SLSQP',
+                                  constraints=cons)
 
 
-    return result.x
 
+        return result.x
+#delta, _ = quad(lambda x: np.exp(-x**2/2) / np.sqrt(2*np.pi), 0, 6 / np.sqrt(n))
+#delta = (1/np.sqrt(2*np.pi))*(2.9/np.sqrt(n))
 delta = (0.7253/np.sqrt(n))
 if algo == 'curate':
     if dataset in ['cancer', 'earthquake']:
@@ -810,7 +6321,6 @@ if algo == 'curate':
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))))))
-        
         d0 = (comb(d,2))
         d1 = comb(d,2)*comb(d-2,1)
         d2 = comb(d,2)*comb(d-2,2)
@@ -914,7 +6424,8 @@ if algo == 'curate':
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
                         *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))))))
-        d0 = comb(d,2)               
+                        
+        d0 = comb(d,2)
         d1 = comb(d,2)*comb(d-2,1)
         d2 = comb(d,2)*comb(d-2,2)
         d3 = comb(d,2)*comb(d-2,3)
@@ -963,9 +6474,362 @@ if algo == 'curate':
 
 
 
-    else:
-        print("Not a valid dataset")
-        
+    elif dataset in ['child']:
+        d = 20
+        fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta))))+
+                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))))))
+        d0 = (comb(d,2))
+        d1 = comb(d,2)*comb(d-2,1)
+        d2 = comb(d,2)*comb(d-2,2)
+        d3 = comb(d,2)*comb(d-2,3)
+        d4 = comb(d,2)*comb(d-2,4)
+        d5 = comb(d,2)*comb(d-2,5)
+        d6 = comb(d,2)*comb(d-2,6)
+        d7 = comb(d,2)*comb(d-2,7)
+        d8 = comb(d,2)*comb(d-2,8)
+        d9 = comb(d,2)*comb(d-2,9)
+        d10 = comb(d,2)*comb(d-2,10)
+        d11 = comb(d,2)*comb(d-2,11)
+        d12 = comb(d,2)*comb(d-2,12)
+        d13 = comb(d,2)*comb(d-2,13)
+        d14 = comb(d,2)*comb(d-2,14)
+        d15 = comb(d,2)*comb(d-2,15)
+        d16 = comb(d,2)*comb(d-2,16)
+        d17 = comb(d,2)*comb(d-2,17)
+        d18 = comb(d,2)*comb(d-2,18)
+        cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d0*x[0]*x[0])
+                                                           +(d1*x[1]*x[1])
+                                                           +(d2*x[2]*x[2])
+                                                           +(d3*x[3]*x[3])
+                                                           +(d4*x[4]*x[4])
+                                                           +(d5*x[5]*x[5])
+                                                           +(d6*x[6]*x[6])
+                                                           +(d7*x[7]*x[7])
+                                                           +(d8*x[8]*x[8])
+                                                           +(d9*x[9]*x[9])
+                                                           +(d10*x[10]*x[10])
+                                                           +(d11*x[11]*x[11])
+                                                           +(d12*x[12]*x[12])
+                                                           +(d13*x[13]*x[13])
+                                                           +(d14*x[14]*x[14])
+                                                           +(d15*x[15]*x[15])
+                                                           +(d16*x[16]*x[16])
+                                                           +(d17*x[17]*x[17])
+                                                           +(d18*x[18]*x[18]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d0*x[0]*x[0])
+                                                           +(d1*x[1]*x[1])
+                                                           +(d2*x[2]*x[2])
+                                                           +(d3*x[3]*x[3])
+                                                           +(d4*x[4]*x[4])
+                                                           +(d5*x[5]*x[5])
+                                                           +(d6*x[6]*x[6])
+                                                           +(d7*x[7]*x[7])
+                                                           +(d8*x[8]*x[8])
+                                                           +(d9*x[9]*x[9])
+                                                           +(d10*x[10]*x[10])
+                                                           +(d11*x[11]*x[11])
+                                                           +(d12*x[12]*x[12])
+                                                           +(d13*x[13]*x[13])
+                                                           +(d14*x[14]*x[14])
+                                                           +(d15*x[15]*x[15])
+                                                           +(d16*x[16]*x[16])
+                                                           +(d17*x[17]*x[17])
+                                                           +(d18*x[18]*x[18]))))})
+        a = 0
+        s = 0
+        b = None
+        bnds = ((a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b),
+            (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b), (a,b))
+        results = opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
+
+
+
+    else : # For Alarm Dataset
+        d = 37
+        fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[33])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[34])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[35])-1))))/delta))))+
+                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[5])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[6])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[7])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[8])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[9])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[10])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[11])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[12])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[13])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[14])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[15])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[16])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[17])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[18])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[19])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[20])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[21])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[22])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[23])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[24])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[25])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[26])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[27])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[28])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[29])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[30])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[31])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[32])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[33])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[34])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[35])-1))))/delta)))))))
+        d0 = (comb(d,2))
+        d1 = comb(d,2)*comb(d-2,1)
+        d2 = comb(d,2)*comb(d-2,2)
+        d3 = comb(d,2)*comb(d-2,3)
+        d4 = comb(d,2)*comb(d-2,4)
+        d5 = comb(d,2)*comb(d-2,5)
+        d6 = comb(d,2)*comb(d-2,6)
+        d7 = comb(d,2)*comb(d-2,7)
+        d8 = comb(d,2)*comb(d-2,8)
+        d9 = comb(d,2)*comb(d-2,9)
+        d10 = comb(d,2)*comb(d-2,10)
+        d11 = comb(d,2)*comb(d-2,11)
+        d12 = comb(d,2)*comb(d-2,12)
+        d13 = comb(d,2)*comb(d-2,13)
+        d14 = comb(d,2)*comb(d-2,14)
+        d15 = comb(d,2)*comb(d-2,15)
+        d16 = comb(d,2)*comb(d-2,16)
+        d17 = comb(d,2)*comb(d-2,17)
+        d18 = comb(d,2)*comb(d-2,18)
+        d19 = comb(d,2)*comb(d-2,19)
+        d20 = comb(d,2)*comb(d-2,20)
+        d21 = comb(d,2)*comb(d-2,21)
+        d22 = comb(d,2)*comb(d-2,22)
+        d23 = comb(d,2)*comb(d-2,23)
+        d24 = comb(d,2)*comb(d-2,24)
+        d25 = comb(d,2)*comb(d-2,25)
+        d26 = comb(d,2)*comb(d-2,26)
+        d27 = comb(d,2)*comb(d-2,27)
+        d28 = comb(d,2)*comb(d-2,28)
+        d29 = comb(d,2)*comb(d-2,29)
+        d30 = comb(d,2)*comb(d-2,30)
+        d31 = comb(d,2)*comb(d-2,31)
+        d32 = comb(d,2)*comb(d-2,32)
+        d33 = comb(d,2)*comb(d-2,33)
+        d34 = comb(d,2)*comb(d-2,34)
+        d35 = comb(d,2)*comb(d-2,35)
+        cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  x[4] - x[5]},
+                {'type': 'ineq', 'fun': lambda x:  x[5] - x[6]},
+                {'type': 'ineq', 'fun': lambda x:  x[6] - x[7]},
+                {'type': 'ineq', 'fun': lambda x:  x[7] - x[8]},
+                {'type': 'ineq', 'fun': lambda x:  x[8] - x[9]},
+                {'type': 'ineq', 'fun': lambda x:  x[9] - x[10]},
+                {'type': 'ineq', 'fun': lambda x:  x[10] - x[11]},
+                {'type': 'ineq', 'fun': lambda x:  x[11] - x[12]},
+                {'type': 'ineq', 'fun': lambda x:  x[12] - x[13]},
+                {'type': 'ineq', 'fun': lambda x:  x[13] - x[14]},
+                {'type': 'ineq', 'fun': lambda x:  x[14] - x[15]},
+                {'type': 'ineq', 'fun': lambda x:  x[15] - x[16]},
+                {'type': 'ineq', 'fun': lambda x:  x[16] - x[17]},
+                {'type': 'ineq', 'fun': lambda x:  x[17] - x[18]},
+                {'type': 'ineq', 'fun': lambda x:  x[18] - x[19]},
+                {'type': 'ineq', 'fun': lambda x:  x[19] - x[20]},
+                {'type': 'ineq', 'fun': lambda x:  x[20] - x[21]},
+                {'type': 'ineq', 'fun': lambda x:  x[21] - x[22]},
+                {'type': 'ineq', 'fun': lambda x:  x[22] - x[23]},
+                {'type': 'ineq', 'fun': lambda x:  x[23] - x[24]},
+                {'type': 'ineq', 'fun': lambda x:  x[24] - x[25]},
+                {'type': 'ineq', 'fun': lambda x:  x[25] - x[26]},
+                {'type': 'ineq', 'fun': lambda x:  x[26] - x[27]},
+                {'type': 'ineq', 'fun': lambda x:  x[27] - x[28]},
+                {'type': 'ineq', 'fun': lambda x:  x[28] - x[29]},
+                {'type': 'ineq', 'fun': lambda x:  x[29] - x[30]},
+                {'type': 'ineq', 'fun': lambda x:  x[30] - x[31]},
+                {'type': 'ineq', 'fun': lambda x:  x[31] - x[32]},
+                {'type': 'ineq', 'fun': lambda x:  x[32] - x[33]},
+                {'type': 'ineq', 'fun': lambda x:  x[33] - x[34]},
+                {'type': 'ineq', 'fun': lambda x:  x[34] - x[35]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d0*x[0]*x[0])
+                                                           +(d1*x[1]*x[1])
+                                                           +(d2*x[2]*x[2])
+                                                           +(d3*x[3]*x[3])
+                                                           +(d4*x[4]*x[4])
+                                                           +(d5*x[5]*x[5])
+                                                           +(d6*x[6]*x[6])
+                                                           +(d7*x[7]*x[7])
+                                                           +(d8*x[8]*x[8])
+                                                           +(d9*x[9]*x[9])
+                                                           +(d10*x[10]*x[10])
+                                                           +(d11*x[11]*x[11])
+                                                           +(d12*x[12]*x[12])
+                                                           +(d13*x[13]*x[13])
+                                                           +(d14*x[14]*x[14])
+                                                           +(d15*x[15]*x[15])
+                                                           +(d16*x[16]*x[16])
+                                                           +(d17*x[17]*x[17])
+                                                           +(d18*x[18]*x[18])
+                                                           +(d19*x[19]*x[19])
+                                                           +(d20*x[20]*x[20])
+                                                           +(d21*x[21]*x[21])
+                                                           +(d22*x[22]*x[22])
+                                                           +(d23*x[23]*x[23])
+                                                           +(d24*x[24]*x[24])
+                                                           +(d25*x[25]*x[25])
+                                                           +(d26*x[26]*x[26])
+                                                           +(d27*x[27]*x[27])
+                                                           +(d28*x[28]*x[28])
+                                                           +(d29*x[29]*x[29])
+                                                           +(d30*x[30]*x[30])
+                                                           +(d31*x[31]*x[31])
+                                                           +(d32*x[32]*x[32])
+                                                           +(d33*x[33]*x[33])
+                                                           +(d34*x[34]*x[34])
+                                                           +(d35*x[35]*x[35]))
+                                                           +np.sqrt(2*np.log(1/delta_prime)*
+                                                            ((d0*x[0]*x[0])
+                                                           +(d1*x[1]*x[1])
+                                                           +(d2*x[2]*x[2])
+                                                           +(d3*x[3]*x[3])
+                                                           +(d4*x[4]*x[4])
+                                                           +(d5*x[5]*x[5])
+                                                           +(d6*x[6]*x[6])
+                                                           +(d7*x[7]*x[7])
+                                                           +(d8*x[8]*x[8])
+                                                           +(d9*x[9]*x[9])
+                                                           +(d10*x[10]*x[10])
+                                                           +(d11*x[11]*x[11])
+                                                           +(d12*x[12]*x[12])
+                                                           +(d13*x[13]*x[13])
+                                                           +(d14*x[14]*x[14])
+                                                           +(d15*x[15]*x[15])
+                                                           +(d16*x[16]*x[16])
+                                                           +(d17*x[17]*x[17])
+                                                           +(d18*x[18]*x[18])
+                                                           +(d19*x[19]*x[19])
+                                                           +(d20*x[20]*x[20])
+                                                           +(d21*x[21]*x[21])
+                                                           +(d22*x[22]*x[22])
+                                                           +(d23*x[23]*x[23])
+                                                           +(d24*x[24]*x[24])
+                                                           +(d25*x[25]*x[25])
+                                                           +(d26*x[26]*x[26])
+                                                           +(d27*x[27]*x[27])
+                                                           +(d28*x[28]*x[28])
+                                                           +(d29*x[29]*x[29])
+                                                           +(d30*x[30]*x[30])
+                                                           +(d31*x[31]*x[31])
+                                                           +(d32*x[32]*x[32])
+                                                           +(d33*x[33]*x[33])
+                                                           +(d34*x[34]*x[34])
+                                                           +(d35*x[35]*x[35]))))})
+        a = 0
+        s = 0
+        b = None
+        bnds = ((a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b),(a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b),
+            (a, b), (a, b), (a, b), (a, b), (a, b), (a, b), (a, b))
+        results =opt.minimize(fun, (s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s
+                                ,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s), 
+                method = 'SLSQP', bounds = bnds, constraints=cons)
+
 
 def bn_data(name, feature=None, size=10000):
     data = pd.read_csv(name+".csv")
@@ -1951,7 +7815,7 @@ def estimate_skeleton_SVT(indep_test_func, data_matrix, alpha, eps=epsilonpriv, 
     return (g, sep_set, eps_em, delta_em, test_count)
 
 
-def estimate_skeleton_curate(epstotal, indep_test_func, data_matrix, **kwargs):
+def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_test_func, data_matrix, **kwargs):
 
     def method_stable(kwargs):
         return ('method' in kwargs) and kwargs['method'] == "stable"
@@ -1993,7 +7857,7 @@ def estimate_skeleton_curate(epstotal, indep_test_func, data_matrix, **kwargs):
     m = data_matrix.shape[0]
     row_rand = np.arange(m)
     np.random.shuffle(row_rand)
-    
+    delta_curate = 0
     dm_subsampled = data_matrix[row_rand[0:int(m*q)]]
     delta = (0.7253/np.sqrt(n))
     deledge = 0
@@ -2065,11 +7929,14 @@ def estimate_skeleton_curate(epstotal, indep_test_func, data_matrix, **kwargs):
                 cont = True
         track.append(count)
         eps_track.append(eps)
+        delta_curate = delta_curate + delta_prime + (track[l]*q*delta_ad)
         eps_rem = eps_rem - (track[l]*eps_track[l]*eps_track[l]+
                             np.sqrt(2*track[l]*np.log(1/delta_prime)*eps_track[l]*eps_track[l]))
         eps_total = eps_rem
         edges = initial - deledge 
         initial = initial - deledge 
+        if delta_curate > delta_total:
+            break
         l += 1
         if method_stable(kwargs):
             g.remove_edges_from(remove_edges)
@@ -2078,7 +7945,7 @@ def estimate_skeleton_curate(epstotal, indep_test_func, data_matrix, **kwargs):
         if ('max_reach' in kwargs) and (l > kwargs['max_reach']):
             break
 
-    return (g, sep_set,track, test, eps_track,p)
+    return (g, sep_set,track, test, eps_track,p,delta_curate)
 
 def estimate_skeleton_probe_examine(indep_test_func, data_matrix, alpha, eps=epsilonpriv, delta=delta_prime, bias=0.02, **kwargs):
 
@@ -2315,11 +8182,19 @@ def estimate_cpdag(skel_graph, sep_set):
 
     return dag
 
+
+# In[123]:
+
+
+
+# In[44]:
+
+
 if dataset in ['asia', 'cancer', 'earthquake']:
     
         #dm, g_answer = bn_data(dataset, size=100000)
         dm, g_answer = bn_data(dataset, size=N)
-        maxreach = max(min(int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
+        maxreach = max(min(np.int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
         indeptest=bincondKendall
         taskval = 'bin'
         
@@ -2327,9 +8202,12 @@ else:
     
         #dm, g_answer = bn_data(dataset, size=100000)
         dm, g_answer = bn_data(dataset, size=N)
-        maxreach = max(min(int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
+        maxreach = max(min(np.int(np.log2(dm.shape[0]))-5, dm.shape[1]-2), 0)
         indeptest=discondKendall
         taskval = 'dis'
+
+
+# In[124]:
 
 
 if algo == 'privpc':
@@ -2410,7 +8288,10 @@ else:
     totaleps_curate = []
     totalf1_curate = []
     for p in range(0,50):
-        (G, sep_set, num, testcnt, epsval,L) =  estimate_skeleton_curate(epstotal = eps_total,
+        (G, sep_set, num, testcnt, epsval,L, deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
+                                                                    delta_prime = 1e-12,
+                                                                    delta_ad = 1e-12,
+                                                                    delta_total = 1e-10,
                                                                      indep_test_func = indeptest,data_matrix = dm,
                                                                      max_reach = maxreach)
         tests = []
@@ -2427,14 +8308,10 @@ else:
         leakage = 0
         j = len(tests)
         for j in range(0,len(tests)):
-            leakage = leakage + (tests[j]*epsval[j]*epsval[j])
-        totalleakage = leakage + (np.sqrt(2*(np.log(1/delta_prime))*(leakage)))
+            leakage = leakage + (tests[j]*epsval[j]*epsval[j])+(np.sqrt(2*(np.log(1/delta_prime))*(epsval[j])))
+        totalleakage = leakage #
         totaleps_curate.append(totalleakage)
         totalf1_curate.append(f1_score)
-#Write the results in a file
-
-#Write the results in a file
-
 if algo == 'curate':
     print(algo)
     print("Total Leakage is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
