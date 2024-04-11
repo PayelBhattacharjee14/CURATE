@@ -1816,8 +1816,8 @@ else:
     totalf1_curate = []
     for p in range(0,50):
         (G, sep_set, num, epsval, L,perorderleakage,deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
-                                                                    delta_prime = 1e-12,
-                                                                    delta_ad = 1e-12,
+                                                                    delta_prime = 1e-14,
+                                                                    delta_ad = 1e-14,
                                                                     delta_total = 1e-10,
                                                                      indep_test_func = indeptest,data_matrix = dm,
                                                                      max_reach = maxreach)
