@@ -1814,7 +1814,7 @@ elif algo == 'pc':
 else:
     totaleps_curate = []
     totalf1_curate = []
-    for p in range(0,10):
+    for p in range(0,50):
         (G, sep_set, num, epsval, L,perorderleakage,deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
                                                                     delta_prime = 1e-12,
                                                                     delta_ad = 1e-12,
