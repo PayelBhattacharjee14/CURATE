@@ -274,6 +274,78 @@ def onlinebudgeting(budget, edges, order):
                                         #bounds = bnds, constraints=cons)
     else:
         print("Not a valid dataset")
+if algo == 'curate':
+    if dataset in ['cancer', 'earthquake']:
+        d = 5
+        fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta))))+
+                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))))))
+                        
+        
+        d0 = (comb(d,2))
+        d1 = comb(d,2)*comb(d-2,1)
+        d2 = comb(d,2)*comb(d-2,2)
+        d3 = comb(d,2)*comb(d-2,3)
+        cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d0*x[0]*x[0])
+                                                           +(d1*x[1]*x[1])
+                                                           +(d2*x[2]*x[2])
+                                                           +(d3*x[3]*x[3]))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d0*x[0]*x[0])))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*d1*x[1]*x[1]))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d2*x[2]*x[2])))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d3*x[3]*x[3]))))})
+        a = 0
+        s = 0
+        b = None
+        bnds = ((a,b), (a,b), (a,b), (a,b))
+        results = opt.minimize(fun, (s,s,s,s), method = 'SLSQP',
+                                        bounds = bnds, constraints=cons)
+
+    elif dataset in ['survey']:
+        d = 6
+        fun = lambda x:(((0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5+0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta))))+
+                        (1-(((0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[0])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[1])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[2])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[3])-1))))/delta)))
+                        *(0.5-0.5*np.exp(((-T)*beta*(np.log(1+(q*(np.exp(x[4])-1))))/delta)))))))
+        d0 = (comb(d,2))
+        d1 = comb(d,2)*comb(d-2,1)
+        d2 = comb(d,2)*comb(d-2,2)
+        d3 = comb(d,2)*comb(d-2,3)
+        d4 = comb(d,2)*comb(d-2,4)
+        cons = ({'type': 'ineq', 'fun': lambda x:  x[0] - x[1]},
+                {'type': 'ineq', 'fun': lambda x:  x[1] - x[2]},
+                {'type': 'ineq', 'fun': lambda x:  x[2] - x[3]},
+                {'type': 'ineq', 'fun': lambda x:  x[3] - x[4]},
+                {'type': 'ineq', 'fun': lambda x:  eps_total - (((d0*x[0]*x[0])
+                                                           +(d1*x[1]*x[1])
+                                                           +(d2*x[2]*x[2])
+                                                           +(d3*x[3]*x[3])
+                                                           +(d4*x[4]*x[4]))
+                                                           +(np.sqrt(2*np.log(1/delta_prime)*(d0*x[0]*x[0]))
+                                                                   +(np.sqrt(2*np.log(1/delta_prime)*(d1*x[1]*x[1])))
+                                                                   +(np.sqrt(2*np.log(1/delta_prime)*(d2*x[2]*x[2])))
+                                                                   +(np.sqrt(2*np.log(1/delta_prime)*(d3*x[3]*x[3])))
+                                                                   +(np.sqrt(2*np.log(1/delta_prime)*(d4*x[4]*x[4])))))})
+        a = 0
+        s = 0
+        b = None
+        bnds = ((a,b), (a,b), (a,b), (a,b), (a,b))
+        results = opt.minimize(fun, (s,s,s,s,s), method = 'SLSQP',
+                                         bounds = bnds, constraints=cons)
         
 def bn_data(name, feature=None, size=10000):
     data = pd.read_csv(name+".csv")
