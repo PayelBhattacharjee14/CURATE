@@ -50,7 +50,7 @@ from scipy.stats import chi2
 # In[37]:
 
 
-#Select a dataset from: ['cancer', 'earthquake', 'survey']
+#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs', 'child', 'alarm']
 #dataset = input("Enter the dataset name ? \n")
 dataset = 'survey'
 
@@ -60,8 +60,8 @@ algo = 'curate'
 
 #
 delta_total = 1e-10
-delta_prime = 1e-12
-delta_ad = 1e-12
+delta_prime = 1e-14
+delta_ad = 1e-14
 
 #N = total number of samples in the dataset 100K
 #q = sub-sampling rate
@@ -71,7 +71,7 @@ q = 1.0
 T = 0.05
 n = q*N
 alpha = T
-beta = 0.5
+beta = 0.3
 
 #q = float(input("Subsampling rate : \n"))
 #T = float(input("Threshold : \n"))
@@ -1814,7 +1814,7 @@ elif algo == 'pc':
 else:
     totaleps_curate = []
     totalf1_curate = []
-    for p in range(0,1):
+    for p in range(0,10):
         (G, sep_set, num, epsval, L,perorderleakage,deltacurate) =  estimate_skeleton_curate(epstotal = eps_total,
                                                                     delta_prime = 1e-12,
                                                                     delta_ad = 1e-12,
@@ -1823,8 +1823,6 @@ else:
                                                                      max_reach = maxreach)
         g = estimate_cpdag(skel_graph=G, sep_set=sep_set)
         f1_score = cal_f1(g.edges, g_answer.edges)
-        #print("epsiloncurate: ", epsiloncurate)
-        #print("CI tests: ", num)
         totaleps_curate.append(np.sum(perorderleakage))
         totalf1_curate.append(f1_score)
         tests.append(np.sum(num))
@@ -1836,7 +1834,7 @@ if algo == 'curate':
     print("Total Leakage is: ",np.mean(totaleps_curate),np.std(totaleps_curate))
     print("The F1-score is: ",np.mean(totalf1_curate),np.std(totalf1_curate))
     #print("Average number of CI tests: ",int(np.mean(tests)))
-    print("Average number of CI tests: ",int(np.mean(num)))
+    print("Average number of CI tests: ",int(np.mean(tests)))
 elif algo == 'pc':
     print(algo)
     print("Total Tests : " ,test_number)
