@@ -2480,8 +2480,8 @@ else:
         leakage = 0
         j = len(tests)
         for j in range(0,len(tests)):
-            leakage = leakage + (tests[j]*epsval[j]*epsval[j])+(np.sqrt(2*(np.log(1/delta_prime))*(epsval[j])))
-        totalleakage = leakage #
+            leakage.append((tests[j]*epsval[j]*epsval[j])+(np.sqrt(2*(np.log(1/delta_prime))*(epsval[j]))))
+        totalleakage = np.sum(leakage)
         totaleps_curate.append(totalleakage)
         totalf1_curate.append(f1_score)
 if algo == 'curate':
