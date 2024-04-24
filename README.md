@@ -1,5 +1,5 @@
-# CURATE: Scaling up Differentially Private Causal Graph Discovery
-This repository contains the implementation code of adaptive privacy budgeting causal graph discovery algorithm CURATE.
+# Adaptive Privacy for Differentially Private Causal Graph Discovery
+This repository contains the implementation code of adaptive privacy budgeting causal graph discovery algorithm CURATE along with the supplementary document that provides the proof of the paper.
 ## Overview
 CURATE enables adaptive privacy budget allocation in the setting of differentially private causal graph discovery. 
 ## Requisites
