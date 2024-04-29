@@ -1,17 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[17]:
-
-
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-#check minimization
-#check delta
-
 #Import all the necessary libraries
 
 import pandas as pd
@@ -67,15 +53,13 @@ delta_ad = 1e-12
 #q = sub-sampling rate
 #T = test threshold
 N = 100000
+#q = float(input("Subsampling rate : \n"))
 q = 1.0
+#T = float(input("Threshold : \n"))
 T = 0.05
 n = q*N
 alpha = T
 beta = 0.5
-
-#q = float(input("Subsampling rate : \n"))
-#T = float(input("Threshold : \n"))
-
 maxi = 0
 for i in range(2,int(n)):
     val = (np.abs(((9*i*i)+(9*i))/((4*i)+14))-np.abs(((9*i*i)/((4*i)+10))))*(2/(np.sqrt(2*np.pi)*(i-1)))
