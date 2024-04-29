@@ -36,9 +36,9 @@ from scipy.stats import chi2
 # In[37]:
 
 
-#Select a dataset from: ['cancer', 'asia', 'earthquake', 'survey','sachs', 'child', 'alarm']
+#Select a dataset from: ['cancer', 'earthquake', 'survey']
 #dataset = input("Enter the dataset name ? \n")
-dataset = 'survey'
+dataset = 'cancer'
 
 #Select an algorithm from: ['curate', 'pc', 'privpc', 'svt', 'em']
 #algo = input("Enter the algorithm name ? \n")
@@ -59,7 +59,7 @@ q = 1.0
 T = 0.05
 n = q*N
 alpha = T
-beta = 0.5
+beta = 0.2
 maxi = 0
 for i in range(2,int(n)):
     val = (np.abs(((9*i*i)+(9*i))/((4*i)+14))-np.abs(((9*i*i)/((4*i)+10))))*(2/(np.sqrt(2*np.pi)*(i-1)))
