@@ -60,8 +60,8 @@ algo = 'curate'
 
 #
 delta_total = 1e-10
-delta_prime = 1e-14
-delta_ad = 1e-14
+delta_prime = 1e-12
+delta_ad = 1e-12
 
 #N = total number of samples in the dataset 100K
 #q = sub-sampling rate
@@ -71,13 +71,17 @@ q = 1.0
 T = 0.05
 n = q*N
 alpha = T
-beta = 0.3
+beta = 0.5
 
 #q = float(input("Subsampling rate : \n"))
 #T = float(input("Threshold : \n"))
 
-
-# In[38]:
+maxi = 0
+for i in range(2,int(n)):
+    #val = (1/np.sqrt(2*np.pi))*(36*i)/(((4*i)+14)*(i-1)*np.sqrt(9/2))
+    val = (np.abs(((9*i*i)+(9*i))/((4*i)+14))-np.abs(((9*i*i)/((4*i)+10))))*(2/(np.sqrt(2*np.pi)*(i-1)))
+    if val>=maxi:
+        maxi=val
 
 
 if algo in ['curate']:
@@ -278,7 +282,7 @@ def onlinebudgeting(budget, edges, order):
     return result.x
 #delta, _ = quad(lambda x: np.exp(-x**2/2) / np.sqrt(2*np.pi), 0, 6 / np.sqrt(n))
 #delta = (1/np.sqrt(2*np.pi))*(2.9/np.sqrt(n))
-delta = (0.7253/np.sqrt(n))
+delta = (maxi/np.sqrt(n))
 if algo == 'curate':
     if dataset in ['cancer', 'earthquake']:
         d = 5
@@ -1382,7 +1386,7 @@ def estimate_skeleton_curate(epstotal, delta_prime, delta_ad, delta_total,indep_
     np.random.shuffle(row_rand)
     delta_curate = 0
     dm_subsampled = data_matrix[row_rand[0:int(m*q)]]
-    delta = (0.7253/np.sqrt(n))
+    delta = (maxi/np.sqrt(n))
     deledge = 0
     initial = comb(d,2)
     epsiloncurate = []
