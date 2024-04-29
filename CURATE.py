@@ -78,7 +78,6 @@ beta = 0.5
 
 maxi = 0
 for i in range(2,int(n)):
-    #val = (1/np.sqrt(2*np.pi))*(36*i)/(((4*i)+14)*(i-1)*np.sqrt(9/2))
     val = (np.abs(((9*i*i)+(9*i))/((4*i)+14))-np.abs(((9*i*i)/((4*i)+10))))*(2/(np.sqrt(2*np.pi)*(i-1)))
     if val>=maxi:
         maxi=val
