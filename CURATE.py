@@ -46,8 +46,8 @@ algo = 'curate'
 
 #
 delta_total = 1e-10
-delta_prime = 1e-12
-delta_ad = 1e-12
+delta_prime = 1e-14
+delta_ad = 1e-14
 
 #N = total number of samples in the dataset 100K
 #q = sub-sampling rate
